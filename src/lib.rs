@@ -30,7 +30,6 @@ impl From<url::ParseError> for Error {
     }
 }
 
-#[allow(unused)]
 pub struct Blockbook {
     base_url: url::Url,
     client: reqwest::Client,
@@ -52,8 +51,24 @@ impl Blockbook {
         Self { base_url, client }
     }
 
-    #[allow(unused)]
     fn url(&self, endpoint: impl AsRef<str>) -> Result<url::Url> {
         Ok(self.base_url.join(endpoint.as_ref())?)
     }
+
+    // https://github.com/trezor/blockbook/blob/95eb699ccbaeef0ec6d8fd0486de3445b8405e8a/docs/api.md#get-block-hash
+    pub async fn block_hash(&self, height: u32) -> Result<BlockHash> {
+        Ok(self
+            .client
+            .get(self.url(&format!("/api/v2/block-index/{height}"))?)
+            .send()
+            .await?
+            .json()
+            .await?)
+    }
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BlockHash {
+    pub block_hash: String,
 }
