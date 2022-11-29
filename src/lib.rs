@@ -56,6 +56,17 @@ impl Blockbook {
         Ok(self.base_url.join(endpoint.as_ref())?)
     }
 
+    async fn query<T: serde::de::DeserializeOwned>(&self, path: impl AsRef<str>) -> Result<T> {
+        Ok(self
+            .client
+            .get(self.url(path.as_ref())?)
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?)
+    }
+
     // https://github.com/trezor/blockbook/blob/95eb699ccbaeef0ec6d8fd0486de3445b8405e8a/docs/api.md#get-block-hash
     pub async fn block_hash(&self, height: u32) -> Result<BlockHash> {
         #[derive(serde::Deserialize)]
@@ -64,11 +75,7 @@ impl Blockbook {
             block_hash: BlockHash,
         }
         Ok(self
-            .client
-            .get(self.url(&format!("/api/v2/block-index/{height}"))?)
-            .send()
-            .await?
-            .json::<BlockHashObject>()
+            .query::<BlockHashObject>(format!("/api/v2/block-index/{height}"))
             .await?
             .block_hash)
     }
