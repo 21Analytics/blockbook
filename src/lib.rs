@@ -91,6 +91,15 @@ impl Blockbook {
     pub async fn transaction(&self, txid: impl AsRef<str>) -> Result<Transaction> {
         self.query(format!("/api/v2/tx/{}", txid.as_ref())).await
     }
+
+    // https://github.com/trezor/blockbook/blob/95eb699ccbaeef0ec6d8fd0486de3445b8405e8a/docs/api.md#get-transaction-specific
+    pub async fn transaction_btc_specific(
+        &self,
+        txid: impl AsRef<str>,
+    ) -> Result<TransactionSpecific> {
+        self.query(format!("/api/v2/tx-specific/{}", txid.as_ref()))
+            .await
+    }
 }
 
 pub mod amount {
@@ -184,4 +193,87 @@ pub struct Vout {
     pub script: Script,
     pub addresses: Vec<Address>,
     pub is_address: bool,
+}
+
+#[derive(Debug, Eq, PartialEq, serde::Deserialize)]
+#[cfg_attr(feature = "test", serde(deny_unknown_fields))]
+pub struct TransactionSpecific {
+    pub txid: Txid,
+    pub version: u8,
+    pub vin: Vec<VinSpecific>,
+    pub vout: Vec<VoutSpecific>,
+    pub blockhash: BlockHash,
+    pub blocktime: Time,
+    #[serde(rename = "hash")]
+    pub wtxid: Wtxid,
+    pub confirmations: u32,
+    pub locktime: PackedLockTime,
+    #[serde(rename = "hex")]
+    pub script: Script,
+    pub size: u32,
+    pub time: Time,
+    pub vsize: u32,
+    pub weight: u32,
+}
+
+#[derive(Debug, Eq, PartialEq, serde::Deserialize)]
+#[cfg_attr(feature = "test", serde(deny_unknown_fields))]
+pub struct VinSpecific {
+    pub sequence: Sequence,
+    pub txid: Txid,
+    #[serde(rename = "txinwitness")]
+    pub tx_in_witness: Option<Witness>,
+    #[serde(rename = "scriptSig")]
+    pub script_sig: ScriptSig,
+    pub vout: u32,
+}
+
+#[derive(Debug, Default, Eq, PartialEq, serde::Deserialize)]
+#[cfg_attr(feature = "test", serde(deny_unknown_fields))]
+pub struct ScriptSig {
+    pub asm: String,
+    #[serde(rename = "hex")]
+    pub script: Script,
+}
+
+#[derive(Debug, Eq, PartialEq, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(feature = "test", serde(deny_unknown_fields))]
+pub struct VoutSpecific {
+    pub n: u32,
+    pub script_pub_key: ScriptPubKey,
+    #[serde(with = "amount")]
+    pub value: Amount,
+}
+
+#[derive(Debug, Eq, PartialEq, serde::Deserialize)]
+#[cfg_attr(feature = "test", serde(deny_unknown_fields))]
+pub struct ScriptPubKey {
+    pub address: Address,
+    pub asm: String,
+    pub desc: Option<String>,
+    #[serde(rename = "hex")]
+    pub script: Script,
+    pub r#type: ScriptPubKeyType,
+}
+
+#[derive(Debug, Eq, PartialEq, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
+#[cfg_attr(feature = "test", serde(deny_unknown_fields))]
+#[non_exhaustive]
+pub enum ScriptPubKeyType {
+    NonStandard,
+    PubKey,
+    PubKeyHash,
+    #[serde(rename = "witness_v0_keyhash")]
+    WitnessV0PubKeyHash,
+    ScriptHash,
+    #[serde(rename = "witness_v0_scripthash")]
+    WitnessV0ScriptHash,
+    MultiSig,
+    NullData,
+    #[serde(rename = "witness_v1_taproot")]
+    WitnessV1Taproot,
+    #[serde(rename = "witness_unknown")]
+    WitnessUnknown,
 }
