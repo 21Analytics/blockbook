@@ -1,4 +1,11 @@
-pub use bitcoin::hash_types::BlockHash;
+pub use bitcoin::blockdata::locktime::{Height, PackedLockTime, Time};
+pub use bitcoin::blockdata::script::Script;
+pub use bitcoin::blockdata::witness::Witness;
+pub use bitcoin::hash_types::{BlockHash, Txid, Wtxid};
+pub use bitcoin::hashes;
+pub use bitcoin::util::address::Address;
+pub use bitcoin::util::amount::Amount;
+pub use bitcoin::Sequence;
 pub use reqwest::Error as ReqwestError;
 pub use url::ParseError;
 
@@ -79,4 +86,102 @@ impl Blockbook {
             .await?
             .block_hash)
     }
+
+    // https://github.com/trezor/blockbook/blob/95eb699ccbaeef0ec6d8fd0486de3445b8405e8a/docs/api.md#get-transaction
+    pub async fn transaction(&self, txid: impl AsRef<str>) -> Result<Transaction> {
+        self.query(format!("/api/v2/tx/{}", txid.as_ref())).await
+    }
+}
+
+pub mod amount {
+    struct AmountVisitor;
+
+    impl<'de> serde::de::Visitor<'de> for AmountVisitor {
+        type Value = super::Amount;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_str("a valid Bitcoin amount")
+        }
+
+        fn visit_f64<E>(self, value: f64) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            if let Ok(amount) = super::Amount::from_btc(value) {
+                Ok(amount)
+            } else {
+                Err(E::custom("invalid Bitcoin amount"))
+            }
+        }
+
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            if let Ok(amount) =
+                super::Amount::from_str_in(value, bitcoin::util::amount::Denomination::Satoshi)
+            {
+                Ok(amount)
+            } else {
+                Err(E::custom("invalid Bitcoin amount"))
+            }
+        }
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<super::Amount, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        deserializer.deserialize_any(AmountVisitor)
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(feature = "test", serde(deny_unknown_fields))]
+pub struct Transaction {
+    pub txid: Txid,
+    pub version: u8,
+    pub vin: Vec<Vin>,
+    pub vout: Vec<Vout>,
+    pub block_hash: BlockHash,
+    pub block_height: Height,
+    pub confirmations: u32,
+    pub block_time: Time,
+    #[serde(with = "amount")]
+    pub value: Amount,
+    #[serde(with = "amount")]
+    pub value_in: Amount,
+    #[serde(with = "amount")]
+    pub fees: Amount,
+    #[serde(rename = "hex")]
+    pub script: Script,
+}
+
+#[derive(Debug, Eq, PartialEq, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(feature = "test", serde(deny_unknown_fields))]
+pub struct Vin {
+    pub txid: Txid,
+    pub vout: Option<u16>,
+    pub sequence: Sequence,
+    pub n: u16,
+    pub addresses: Vec<Address>,
+    pub is_address: bool,
+    #[serde(with = "amount")]
+    pub value: Amount,
+}
+
+#[derive(Debug, Eq, PartialEq, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(feature = "test", serde(deny_unknown_fields))]
+pub struct Vout {
+    #[serde(with = "amount")]
+    pub value: Amount,
+    pub n: u16,
+    pub spent: Option<bool>,
+    #[serde(rename = "hex")]
+    pub script: Script,
+    pub addresses: Vec<Address>,
+    pub is_address: bool,
 }
