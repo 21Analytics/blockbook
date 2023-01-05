@@ -1,5 +1,5 @@
 pub use bitcoin::hash_types::BlockHash;
-pub use reqwest::Error as RewestError;
+pub use reqwest::Error as ReqwestError;
 pub use url::ParseError;
 
 #[derive(Debug, thiserror::Error)]
