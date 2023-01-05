@@ -1,3 +1,4 @@
+pub use bitcoin::hash_types::BlockHash;
 pub use reqwest::Error as RewestError;
 pub use url::ParseError;
 
@@ -57,18 +58,18 @@ impl Blockbook {
 
     // https://github.com/trezor/blockbook/blob/95eb699ccbaeef0ec6d8fd0486de3445b8405e8a/docs/api.md#get-block-hash
     pub async fn block_hash(&self, height: u32) -> Result<BlockHash> {
+        #[derive(serde::Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct BlockHashObject {
+            block_hash: BlockHash,
+        }
         Ok(self
             .client
             .get(self.url(&format!("/api/v2/block-index/{height}"))?)
             .send()
             .await?
-            .json()
-            .await?)
+            .json::<BlockHashObject>()
+            .await?
+            .block_hash)
     }
-}
-
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct BlockHash {
-    pub block_hash: String,
 }

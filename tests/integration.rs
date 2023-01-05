@@ -4,9 +4,13 @@ fn blockbook() -> blockbook::Blockbook {
 
 #[tokio::test]
 async fn test_block_hash() {
-    let hash = blockbook().block_hash(763_672).await.unwrap().block_hash;
+    let hash = blockbook().block_hash(763_672).await.unwrap();
     assert_eq!(
-        hash,
-        "00000000000000000002be1ecb5125765125a8d9836a7f2cefbecf646fa2674e"
+        hash.as_ref(),
+        [
+            0x4e, 0x67, 0xa2, 0x6f, 0x64, 0xcf, 0xbe, 0xef, 0x2c, 0x7f, 0x6a, 0x83, 0xd9, 0xa8,
+            0x25, 0x51, 0x76, 0x25, 0x51, 0xcb, 0x1e, 0xbe, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+        ],
     );
 }
