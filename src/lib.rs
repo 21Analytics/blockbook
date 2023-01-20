@@ -99,7 +99,7 @@ impl Blockbook {
     }
 }
 
-pub mod amount {
+mod amount {
     struct AmountVisitor;
 
     impl<'de> serde::de::Visitor<'de> for AmountVisitor {
@@ -134,7 +134,7 @@ pub mod amount {
         }
     }
 
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<super::Amount, D::Error>
+    pub(super) fn deserialize<'de, D>(deserializer: D) -> Result<super::Amount, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
