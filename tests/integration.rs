@@ -1,8 +1,9 @@
 use blockbook::{
     hashes::{self, hex::FromHex},
-    Address, AddressBlockVout, Amount, Block, BlockHash, BlockTransaction, BlockVin, BlockVout,
-    Height, OpReturn, PackedLockTime, ScriptPubKey, ScriptPubKeyType, ScriptSig, Sequence, Time,
-    Transaction, TransactionSpecific, Vin, VinSpecific, Vout, VoutSpecific, Witness,
+    Address, AddressBlockVout, Amount, Asset, Block, BlockHash, BlockTransaction, BlockVin,
+    BlockVout, Chain, Height, OpReturn, PackedLockTime, ScriptPubKey, ScriptPubKeyType, ScriptSig,
+    Sequence, Time, Transaction, TransactionSpecific, Vin, VinSpecific, Vout, VoutSpecific,
+    Witness,
 };
 use std::str::FromStr;
 
@@ -61,6 +62,20 @@ async fn blockbook() -> UsageCountingBlockbook {
         }
         tokio::task::yield_now().await;
     }
+}
+
+#[tokio::test]
+async fn test_status() {
+    let status = blockbook().await.status().await.unwrap();
+
+    assert_eq!(status.blockbook.coin, Asset::Bitcoin);
+    assert_eq!(status.blockbook.decimals, 8);
+    assert_eq!(
+        status.blockbook.version,
+        semver::Version::parse("0.4.0").unwrap()
+    );
+    assert_eq!(status.backend.chain, Chain::Main);
+    assert_eq!(status.backend.protocol_version, "70016");
 }
 
 #[tokio::test]

@@ -74,6 +74,11 @@ impl Blockbook {
             .await?)
     }
 
+    // https://github.com/trezor/blockbook/blob/95eb699ccbaeef0ec6d8fd0486de3445b8405e8a/docs/api.md#status-page
+    pub async fn status(&self) -> Result<Status> {
+        self.query::<Status>("/api/v2").await
+    }
+
     // https://github.com/trezor/blockbook/blob/95eb699ccbaeef0ec6d8fd0486de3445b8405e8a/docs/api.md#get-block-hash
     pub async fn block_hash(&self, height: u32) -> Result<BlockHash> {
         #[derive(serde::Deserialize)]
@@ -188,6 +193,68 @@ pub enum AddressBlockVout {
 
 #[derive(Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct OpReturn(pub String);
+
+#[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+#[non_exhaustive]
+pub enum Asset {
+    Bitcoin,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+#[cfg_attr(feature = "test", serde(deny_unknown_fields))]
+pub struct Status {
+    pub blockbook: StatusBlockbook,
+    pub backend: Backend,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(feature = "test", serde(deny_unknown_fields))]
+#[allow(clippy::struct_excessive_bools)]
+pub struct StatusBlockbook {
+    pub coin: Asset,
+    pub host: String,
+    pub version: semver::Version,
+    pub git_commit: String,
+    pub build_time: chrono::DateTime<chrono::Utc>,
+    pub sync_mode: bool,
+    #[serde(rename = "initialSync")]
+    pub is_initial_sync: bool,
+    #[serde(rename = "inSync")]
+    pub is_in_sync: bool,
+    pub best_height: crate::Height,
+    pub last_block_time: chrono::DateTime<chrono::Utc>,
+    #[serde(rename = "inSyncMempool")]
+    pub is_in_sync_mempool: bool,
+    pub last_mempool_time: chrono::DateTime<chrono::Utc>,
+    pub mempool_size: u32,
+    pub decimals: u8,
+    pub db_size: u64,
+    pub about: String,
+    pub has_fiat_rates: bool,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+#[non_exhaustive]
+pub enum Chain {
+    #[serde(rename = "main")]
+    Main,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(feature = "test", serde(deny_unknown_fields))]
+pub struct Backend {
+    pub chain: Chain,
+    pub blocks: crate::Height,
+    pub headers: u32,
+    pub best_block_hash: crate::BlockHash,
+    pub difficulty: String,
+    pub size_on_disk: u64,
+    pub version: String,
+    pub subversion: String,
+    pub protocol_version: String,
+}
 
 mod amount {
     struct AmountVisitor;
