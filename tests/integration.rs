@@ -2,8 +2,8 @@ use blockbook::{
     hashes::{self, hex::FromHex},
     Address, AddressBlockVout, Amount, Asset, Block, BlockHash, BlockTransaction, BlockVin,
     BlockVout, Chain, Currency, Height, OpReturn, PackedLockTime, ScriptPubKey, ScriptPubKeyType,
-    ScriptSig, Sequence, TickersList, Time, Transaction, TransactionSpecific, Vin, VinSpecific,
-    Vout, VoutSpecific, Witness,
+    ScriptSig, Sequence, Ticker, TickersList, Time, Transaction, TransactionSpecific, Vin,
+    VinSpecific, Vout, VoutSpecific, Witness,
 };
 use std::str::FromStr;
 
@@ -651,4 +651,88 @@ async fn test_current_tickers_list() {
         )
         .await
         .unwrap();
+}
+
+#[tokio::test]
+async fn test_tickers() {
+    let tickers = blockbook()
+        .await
+        .tickers(Some(Time::from_consensus(1_674_821_349).unwrap()))
+        .await
+        .unwrap();
+    let expected_tickers = Ticker {
+        timestamp: Time::from_consensus(1_674_864_000).unwrap(),
+        rates: std::collections::HashMap::from([
+            (Currency::Aed, 84_783.336),
+            (Currency::Ars, 4_282_867.5),
+            (Currency::Aud, 32_274.684),
+            (Currency::Bdt, 2_447_401.8),
+            (Currency::Bhd, 8_703.507),
+            (Currency::Bmd, 23_082.857),
+            (Currency::Brl, 117_937.25),
+            (Currency::Btc, 1.0),
+            (Currency::Cad, 30_791.379),
+            (Currency::Chf, 21_293.938),
+            (Currency::Clp, 18_614_248.0),
+            (Currency::Cny, 156_582.56),
+            (Currency::Czk, 505_740.8),
+            (Currency::Dkk, 157_962.92),
+            (Currency::Eth, 14.43425),
+            (Currency::Eur, 21_232.443),
+            (Currency::Gbp, 18_643.771),
+            (Currency::Hkd, 180_742.25),
+            (Currency::Huf, 8_293_902.0),
+            (Currency::Idr, 345_612_700.0),
+            (Currency::Ils, 79_411.266),
+            (Currency::Inr, 1_881_595.6),
+            (Currency::Jpy, 2_998_118.5),
+            (Currency::Krw, 28_393_070.0),
+            (Currency::Kwd, 7_044.703_6),
+            (Currency::Lkr, 8_404_290.0),
+            (Currency::Mmk, 48_486_224.0),
+            (Currency::Mxn, 433_456.84),
+            (Currency::Myr, 97_963.65),
+            (Currency::Ngn, 10_624_578.0),
+            (Currency::Nok, 228_294.1),
+            (Currency::Nzd, 35_566.81),
+            (Currency::Php, 1_260_220.1),
+            (Currency::Pkr, 5_783_717.5),
+            (Currency::Pln, 99_952.24),
+            (Currency::Rub, 1_609_952.6),
+            (Currency::Sar, 86_651.664),
+            (Currency::Sek, 237_953.11),
+            (Currency::Sgd, 30_321.643),
+            (Currency::Thb, 756_436.75),
+            (Currency::Try, 434_174.72),
+            (Currency::Twd, 698_637.3),
+            (Currency::Uah, 848_393.44),
+            (Currency::Usd, 23_082.857),
+            (Currency::Vef, 2_311.286_6),
+            (Currency::Vnd, 541_523_840.0),
+            (Currency::Zar, 397_099.03),
+        ]),
+    };
+    assert_eq!(tickers, expected_tickers);
+}
+
+#[tokio::test]
+async fn test_current_tickers() {
+    blockbook().await.tickers(None).await.unwrap();
+}
+
+#[tokio::test]
+async fn test_ticker() {
+    let ticker = blockbook()
+        .await
+        .ticker(
+            Currency::Idr,
+            Some(Time::from_consensus(1_674_692_106).unwrap()),
+        )
+        .await
+        .unwrap();
+    let expected_ticker = Ticker {
+        timestamp: Time::from_consensus(1_674_777_600).unwrap(),
+        rates: std::collections::HashMap::from([(Currency::Idr, 344_337_380.0)]),
+    };
+    assert_eq!(ticker, expected_ticker);
 }

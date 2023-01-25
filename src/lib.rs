@@ -121,6 +121,42 @@ impl Blockbook {
         self.query::<TickersList>(format!("/api/v2/tickers-list/?timestamp={timestamp}"))
             .await
     }
+
+    // https://github.com/trezor/blockbook/blob/86ff5a9538dba6b869f53850676f9edfc3cb5fa8/docs/api.md#tickers
+    /// The timestamp parameter specifies the point in time the ticker should be
+    /// obtained from. The API will return a ticker that is as close as possible
+    /// to the specified timestamp. If the timestamp parameter is None, the
+    /// API will return the ticker with the latest available timestamp.
+    pub async fn ticker(&self, currency: Currency, timestamp: Option<Time>) -> Result<Ticker> {
+        let mut query_string = format!("?currency={currency:?}");
+        if let Some(ts) = timestamp {
+            query_string.push_str(&format!("&timestamp={ts}"));
+        }
+        self.query::<Ticker>(format!("/api/v2/tickers/{query_string}"))
+            .await
+    }
+
+    // https://github.com/trezor/blockbook/blob/86ff5a9538dba6b869f53850676f9edfc3cb5fa8/docs/api.md#tickers
+    /// The timestamp parameter specifies the point in time the tickers should
+    /// be obtained from. The API will return the tickers that are as close as
+    /// possible to the specified timestamp. If the timestamp parameter is
+    /// None, the API will return the tickers with the latest available
+    /// timestamp.
+    pub async fn tickers(&self, timestamp: Option<Time>) -> Result<Ticker> {
+        self.query::<Ticker>(format!(
+            "/api/v2/tickers/{}",
+            timestamp.map_or(String::new(), |ts| format!("?timestamp={ts}"))
+        ))
+        .await
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[cfg_attr(feature = "test", serde(deny_unknown_fields))]
+pub struct Ticker {
+    #[serde(rename = "ts")]
+    pub timestamp: Time,
+    pub rates: std::collections::HashMap<Currency, f64>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
@@ -326,7 +362,7 @@ pub struct TickersList {
     pub available_currencies: Vec<Currency>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "lowercase")]
 #[non_exhaustive]
 pub enum Currency {
