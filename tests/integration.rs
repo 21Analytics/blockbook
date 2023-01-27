@@ -6,13 +6,66 @@ use blockbook::{
 };
 use std::str::FromStr;
 
-fn blockbook(i: u8) -> blockbook::Blockbook {
-    blockbook::Blockbook::new(url::Url::parse(&format!("https://btc{i}.trezor.io")).unwrap())
+static USED_BLOCKBOOK_COUNTER: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
+
+static AVAILABLE_BLOCKBOOKS: once_cell::sync::Lazy<
+    std::sync::Arc<std::sync::Mutex<Vec<blockbook::Blockbook>>>,
+> = once_cell::sync::Lazy::new(|| {
+    std::sync::Arc::new(std::sync::Mutex::new(blockbooks().collect()))
+});
+
+const TOTAL_BLOCKBOOKS: u8 = 4;
+
+struct UsageCountingBlockbook {
+    blockbook: blockbook::Blockbook,
+}
+
+impl std::ops::Deref for UsageCountingBlockbook {
+    type Target = blockbook::Blockbook;
+
+    fn deref(&self) -> &Self::Target {
+        &self.blockbook
+    }
+}
+
+impl Drop for UsageCountingBlockbook {
+    fn drop(&mut self) {
+        USED_BLOCKBOOK_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    }
+}
+
+fn blockbooks() -> impl Iterator<Item = blockbook::Blockbook> {
+    (1..6).filter(|&i| i != 4).map(|i| {
+        blockbook::Blockbook::new(url::Url::parse(&format!("https://btc{i}.trezor.io")).unwrap())
+    })
+}
+
+async fn blockbook() -> UsageCountingBlockbook {
+    loop {
+        if let Some(blockbook) = AVAILABLE_BLOCKBOOKS.lock().unwrap().pop() {
+            return UsageCountingBlockbook { blockbook };
+        }
+        if USED_BLOCKBOOK_COUNTER
+            .compare_exchange(
+                TOTAL_BLOCKBOOKS,
+                0,
+                std::sync::atomic::Ordering::Relaxed,
+                std::sync::atomic::Ordering::Relaxed,
+            )
+            .is_ok()
+        {
+            tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+            let mut bb = AVAILABLE_BLOCKBOOKS.lock().unwrap();
+            bb.extend(blockbooks());
+            assert_eq!(bb.len(), TOTAL_BLOCKBOOKS as usize);
+        }
+        tokio::task::yield_now().await;
+    }
 }
 
 #[tokio::test]
 async fn test_block_hash() {
-    let hash = blockbook(1).block_hash(763_672).await.unwrap();
+    let hash = blockbook().await.block_hash(763_672).await.unwrap();
     assert_eq!(
         hash.as_ref(),
         [
@@ -26,7 +79,7 @@ async fn test_block_hash() {
 #[tokio::test]
 async fn test_btc_tx() {
     let txid = "b0714235addd08daf83b979aa35cc9ed7558efb8327b86b4d3ccacd8b0482ae1";
-    let tx = blockbook(2).transaction(txid).await.unwrap();
+    let tx = blockbook().await.transaction(txid).await.unwrap();
     let expected_tx = Transaction{
         txid: txid.parse().unwrap(),
         version: 2,
@@ -108,7 +161,11 @@ async fn test_btc_tx() {
 #[tokio::test]
 async fn test_btc_tx_specific() {
     let txid = "b0714235addd08daf83b979aa35cc9ed7558efb8327b86b4d3ccacd8b0482ae1";
-    let tx = blockbook(3).transaction_btc_specific(txid).await.unwrap();
+    let tx = blockbook()
+        .await
+        .transaction_btc_specific(txid)
+        .await
+        .unwrap();
     let expected_tx = TransactionSpecific{
         txid: txid.parse().unwrap(),
         version: 2,
@@ -190,7 +247,11 @@ async fn test_btc_tx_specific() {
 #[tokio::test]
 async fn test_btc_tx_specific_pre_segwit() {
     let txid = "0c5cb51f39ecb826cd477d94576abde1d2b6ef1b2e0ac7b9cea5d5ab28aba902";
-    let tx = blockbook(5).transaction_btc_specific(txid).await.unwrap();
+    let tx = blockbook()
+        .await
+        .transaction_btc_specific(txid)
+        .await
+        .unwrap();
     let expected_tx = TransactionSpecific{
         txid: txid.parse().unwrap(),
         version: 1,
