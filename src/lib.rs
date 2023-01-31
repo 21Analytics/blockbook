@@ -140,9 +140,17 @@ pub mod amount {
     {
         deserializer.deserialize_any(AmountVisitor)
     }
+
+    #[allow(clippy::trivially_copy_pass_by_ref)]
+    pub(super) fn serialize<S>(amount: &super::Amount, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.collect_str(&amount.to_sat().to_string())
+    }
 }
 
-#[derive(Debug, Eq, PartialEq, serde::Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 pub struct Transaction {
@@ -164,7 +172,7 @@ pub struct Transaction {
     pub script: Script,
 }
 
-#[derive(Debug, Eq, PartialEq, serde::Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 pub struct Vin {
@@ -178,7 +186,7 @@ pub struct Vin {
     pub value: Amount,
 }
 
-#[derive(Debug, Eq, PartialEq, serde::Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 pub struct Vout {
@@ -192,7 +200,7 @@ pub struct Vout {
     pub is_address: bool,
 }
 
-#[derive(Debug, Eq, PartialEq, serde::Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 pub struct TransactionSpecific {
     pub txid: Txid,
@@ -213,7 +221,7 @@ pub struct TransactionSpecific {
     pub weight: u32,
 }
 
-#[derive(Debug, Eq, PartialEq, serde::Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 pub struct VinSpecific {
     pub sequence: Sequence,
@@ -225,7 +233,7 @@ pub struct VinSpecific {
     pub vout: u32,
 }
 
-#[derive(Debug, Default, Eq, PartialEq, serde::Deserialize)]
+#[derive(Clone, Debug, Default, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 pub struct ScriptSig {
     pub asm: String,
@@ -233,7 +241,7 @@ pub struct ScriptSig {
     pub script: Script,
 }
 
-#[derive(Debug, Eq, PartialEq, serde::Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 pub struct VoutSpecific {
@@ -243,7 +251,7 @@ pub struct VoutSpecific {
     pub value: Amount,
 }
 
-#[derive(Debug, Eq, PartialEq, serde::Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 pub struct ScriptPubKey {
     pub address: Address,
@@ -254,7 +262,7 @@ pub struct ScriptPubKey {
     pub r#type: ScriptPubKeyType,
 }
 
-#[derive(Debug, Eq, PartialEq, serde::Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "lowercase")]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 #[non_exhaustive]
@@ -273,4 +281,31 @@ pub enum ScriptPubKeyType {
     WitnessV1Taproot,
     #[serde(rename = "witness_unknown")]
     WitnessUnknown,
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn serde_amounts() {
+        #[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+        struct TestStruct {
+            #[serde(with = "super::amount")]
+            pub amount: super::Amount,
+        }
+
+        serde_test::assert_tokens(
+            &TestStruct {
+                amount: super::Amount::from_sat(123_456_789),
+            },
+            &[
+                serde_test::Token::Struct {
+                    name: "TestStruct",
+                    len: 1,
+                },
+                serde_test::Token::Str("amount"),
+                serde_test::Token::Str("123456789"),
+                serde_test::Token::StructEnd,
+            ],
+        );
+    }
 }
