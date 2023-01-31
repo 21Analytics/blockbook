@@ -77,7 +77,7 @@ async fn test_block_hash() {
 }
 
 #[tokio::test]
-async fn test_btc_tx() {
+async fn test_tx() {
     let txid = "b0714235addd08daf83b979aa35cc9ed7558efb8327b86b4d3ccacd8b0482ae1";
     let tx = blockbook().await.transaction(txid).await.unwrap();
     let expected_tx = Transaction{
@@ -159,13 +159,9 @@ async fn test_btc_tx() {
 }
 
 #[tokio::test]
-async fn test_btc_tx_specific() {
+async fn test_tx_specific() {
     let txid = "b0714235addd08daf83b979aa35cc9ed7558efb8327b86b4d3ccacd8b0482ae1";
-    let tx = blockbook()
-        .await
-        .transaction_btc_specific(txid)
-        .await
-        .unwrap();
+    let tx = blockbook().await.transaction_specific(txid).await.unwrap();
     let expected_tx = TransactionSpecific{
         txid: txid.parse().unwrap(),
         version: 2,
@@ -245,13 +241,9 @@ async fn test_btc_tx_specific() {
 }
 
 #[tokio::test]
-async fn test_btc_tx_specific_pre_segwit() {
+async fn test_tx_specific_pre_segwit() {
     let txid = "0c5cb51f39ecb826cd477d94576abde1d2b6ef1b2e0ac7b9cea5d5ab28aba902";
-    let tx = blockbook()
-        .await
-        .transaction_btc_specific(txid)
-        .await
-        .unwrap();
+    let tx = blockbook().await.transaction_specific(txid).await.unwrap();
     let expected_tx = TransactionSpecific{
         txid: txid.parse().unwrap(),
         version: 1,

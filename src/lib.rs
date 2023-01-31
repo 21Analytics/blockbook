@@ -93,10 +93,7 @@ impl Blockbook {
     }
 
     // https://github.com/trezor/blockbook/blob/95eb699ccbaeef0ec6d8fd0486de3445b8405e8a/docs/api.md#get-transaction-specific
-    pub async fn transaction_btc_specific(
-        &self,
-        txid: impl AsRef<str>,
-    ) -> Result<TransactionSpecific> {
+    pub async fn transaction_specific(&self, txid: impl AsRef<str>) -> Result<TransactionSpecific> {
         self.query(format!("/api/v2/tx-specific/{}", txid.as_ref()))
             .await
     }
