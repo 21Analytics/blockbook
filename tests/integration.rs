@@ -7,21 +7,25 @@ use blockbook::{
 };
 use std::str::FromStr;
 
-static USED_BLOCKBOOK_COUNTER: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
-
-static AVAILABLE_BLOCKBOOKS: once_cell::sync::Lazy<
-    std::sync::Arc<std::sync::Mutex<Vec<blockbook::Blockbook>>>,
+static QUEUED_BLOCKBOOKS: once_cell::sync::Lazy<
+    std::sync::Arc<std::sync::Mutex<std::collections::VecDeque<QueuedBlockbook>>>,
 > = once_cell::sync::Lazy::new(|| {
-    std::sync::Arc::new(std::sync::Mutex::new(blockbooks().collect()))
+    std::sync::Arc::new(std::sync::Mutex::new(
+        blockbooks()
+            .map(|blockbook| QueuedBlockbook {
+                blockbook: blockbook.into(),
+                timeout: std::time::Duration::ZERO,
+            })
+            .collect(),
+    ))
 });
 
-const TOTAL_BLOCKBOOKS: u8 = 4;
-
-struct UsageCountingBlockbook {
-    blockbook: blockbook::Blockbook,
+struct QueuedBlockbook {
+    blockbook: std::sync::Arc<blockbook::Blockbook>,
+    timeout: std::time::Duration,
 }
 
-impl std::ops::Deref for UsageCountingBlockbook {
+impl std::ops::Deref for QueuedBlockbook {
     type Target = blockbook::Blockbook;
 
     fn deref(&self) -> &Self::Target {
@@ -29,9 +33,15 @@ impl std::ops::Deref for UsageCountingBlockbook {
     }
 }
 
-impl Drop for UsageCountingBlockbook {
+impl Drop for QueuedBlockbook {
     fn drop(&mut self) {
-        USED_BLOCKBOOK_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        QUEUED_BLOCKBOOKS
+            .lock()
+            .unwrap()
+            .push_back(QueuedBlockbook {
+                blockbook: self.blockbook.clone(),
+                timeout: std::time::Duration::from_millis(500),
+            });
     }
 }
 
@@ -41,24 +51,14 @@ fn blockbooks() -> impl Iterator<Item = blockbook::Blockbook> {
     })
 }
 
-async fn blockbook() -> UsageCountingBlockbook {
+async fn blockbook() -> QueuedBlockbook {
     loop {
-        if let Some(blockbook) = AVAILABLE_BLOCKBOOKS.lock().unwrap().pop() {
-            return UsageCountingBlockbook { blockbook };
-        }
-        if USED_BLOCKBOOK_COUNTER
-            .compare_exchange(
-                TOTAL_BLOCKBOOKS,
-                0,
-                std::sync::atomic::Ordering::Relaxed,
-                std::sync::atomic::Ordering::Relaxed,
-            )
-            .is_ok()
-        {
-            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
-            let mut bb = AVAILABLE_BLOCKBOOKS.lock().unwrap();
-            bb.extend(blockbooks());
-            assert_eq!(bb.len(), TOTAL_BLOCKBOOKS as usize);
+        if let Some(queued_blockbook) = {
+            let blockbook = QUEUED_BLOCKBOOKS.lock().unwrap().pop_front();
+            blockbook
+        } {
+            tokio::time::sleep(queued_blockbook.timeout).await;
+            return queued_blockbook;
         }
         tokio::task::yield_now().await;
     }
