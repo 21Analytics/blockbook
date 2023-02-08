@@ -1,8 +1,8 @@
 use blockbook::{
     hashes::{self, hex::FromHex},
-    Address, Amount, BlockHash, Height, PackedLockTime, ScriptPubKey, ScriptPubKeyType, ScriptSig,
-    Sequence, Time, Transaction, TransactionSpecific, Vin, VinSpecific, Vout, VoutSpecific,
-    Witness,
+    Address, AddressBlockVout, Amount, Block, BlockHash, BlockTransaction, BlockVin, BlockVout,
+    Height, OpReturn, PackedLockTime, ScriptPubKey, ScriptPubKeyType, ScriptSig, Sequence, Time,
+    Transaction, TransactionSpecific, Vin, VinSpecific, Vout, VoutSpecific, Witness,
 };
 use std::str::FromStr;
 
@@ -54,7 +54,7 @@ async fn blockbook() -> UsageCountingBlockbook {
             )
             .is_ok()
         {
-            tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
             let mut bb = AVAILABLE_BLOCKBOOKS.lock().unwrap();
             bb.extend(blockbooks());
             assert_eq!(bb.len(), TOTAL_BLOCKBOOKS as usize);
@@ -288,4 +288,269 @@ async fn test_tx_specific_pre_segwit() {
         ],
     };
     assert_eq!(tx, expected_tx);
+}
+
+#[allow(clippy::too_many_lines)]
+#[tokio::test]
+async fn test_block_by_hash() {
+    let block = blockbook()
+        .await
+        .block_by_hash(
+            "000000000003ba27aa200b1cecaad478d2b00432346c3f1f3986da1afd33e506"
+                .parse()
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    let expected_block = Block {
+        page: 1,
+        total_pages: 1,
+        items_on_page: 1000,
+        hash: "000000000003ba27aa200b1cecaad478d2b00432346c3f1f3986da1afd33e506"
+            .parse()
+            .unwrap(),
+        previous_block_hash: Some(
+            "000000000002d01c1fccc21636b607dfd930d31d01c3a62104612a1719011250"
+                .parse()
+                .unwrap(),
+        ),
+        next_block_hash: Some(
+            "00000000000080b66c911bd5ba14a74260057311eaeb1982802f7010f1a9f090"
+                .parse()
+                .unwrap(),
+        ),
+        height: Height::from_consensus(100_000).unwrap(),
+        confirmations: block.confirmations,
+        size: 957,
+        time: Time::from_consensus(1_293_623_863).unwrap(),
+        version: 1,
+        merkle_root: "f3e94742aca4b5ef85488dc37c06c3282295ffec960994b2c0d5ac2a25a95766"
+            .parse()
+            .unwrap(),
+        nonce: "274148111".into(),
+        bits: "1b04864c".into(),
+        difficulty: "14484.1623612254".into(),
+        tx_count: 4,
+        txs: vec![
+            BlockTransaction {
+                txid: "8c14f0db3df150123e6f3dbbf30f8b955a8249b62ac1d1ff16284aefa3d06d87"
+                    .parse()
+                    .unwrap(),
+                vin: vec![BlockVin {
+                    n: 0,
+                    addresses: None,
+                    is_address: false,
+                    value: Amount::ZERO,
+                }],
+                vout: vec![BlockVout {
+                    value: Amount::from_sat(5_000_000_000),
+                    n: 0,
+                    spent: Some(true),
+                    addresses: vec![AddressBlockVout::Address(
+                        "1HWqMzw1jfpXb3xyuUZ4uWXY4tqL2cW47J".parse().unwrap(),
+                    )],
+                    is_address: true,
+                }],
+                block_hash: "000000000003ba27aa200b1cecaad478d2b00432346c3f1f3986da1afd33e506"
+                    .parse()
+                    .unwrap(),
+                block_height: Height::from_consensus(100_000).unwrap(),
+                confirmations: block.confirmations,
+                block_time: Time::from_consensus(1_293_623_863).unwrap(),
+                value: Amount::from_sat(5_000_000_000),
+                value_in: Amount::ZERO,
+                fees: Amount::ZERO,
+            },
+            BlockTransaction {
+                txid: "fff2525b8931402dd09222c50775608f75787bd2b87e56995a7bdd30f79702c4"
+                    .parse()
+                    .unwrap(),
+                vin: vec![BlockVin {
+                    n: 0,
+                    addresses: Some(vec!["1BNwxHGaFbeUBitpjy2AsKpJ29Ybxntqvb".parse().unwrap()]),
+                    is_address: true,
+                    value: Amount::from_sat(5_000_000_000),
+                }],
+                vout: vec![
+                    BlockVout {
+                        value: Amount::from_sat(556_000_000),
+                        n: 0,
+                        spent: Some(true),
+                        addresses: vec![AddressBlockVout::Address(
+                            "1JqDybm2nWTENrHvMyafbSXXtTk5Uv5QAn".parse().unwrap(),
+                        )],
+                        is_address: true,
+                    },
+                    BlockVout {
+                        value: Amount::from_sat(4_444_000_000),
+                        n: 1,
+                        spent: Some(true),
+                        addresses: vec![AddressBlockVout::Address(
+                            "1EYTGtG4LnFfiMvjJdsU7GMGCQvsRSjYhx".parse().unwrap(),
+                        )],
+                        is_address: true,
+                    },
+                ],
+                block_hash: "000000000003ba27aa200b1cecaad478d2b00432346c3f1f3986da1afd33e506"
+                    .parse()
+                    .unwrap(),
+                block_height: Height::from_consensus(100_000).unwrap(),
+                confirmations: block.confirmations,
+                block_time: Time::from_consensus(1_293_623_863).unwrap(),
+                value: Amount::from_sat(5_000_000_000),
+                value_in: Amount::from_sat(5_000_000_000),
+                fees: Amount::ZERO,
+            },
+            BlockTransaction {
+                txid: "6359f0868171b1d194cbee1af2f16ea598ae8fad666d9b012c8ed2b79a236ec4"
+                    .parse()
+                    .unwrap(),
+                vin: vec![BlockVin {
+                    n: 0,
+                    addresses: Some(vec!["15vScfMHNrXN4QvWe54q5hwfVoYwG79CS1".parse().unwrap()]),
+                    is_address: true,
+                    value: Amount::from_sat(300_000_000),
+                }],
+                vout: vec![
+                    BlockVout {
+                        value: Amount::from_sat(1_000_000),
+                        n: 0,
+                        spent: Some(true),
+                        addresses: vec![AddressBlockVout::Address(
+                            "1H8ANdafjpqYntniT3Ddxh4xPBMCSz33pj".parse().unwrap(),
+                        )],
+                        is_address: true,
+                    },
+                    BlockVout {
+                        value: Amount::from_sat(299_000_000),
+                        n: 1,
+                        spent: Some(true),
+                        addresses: vec![AddressBlockVout::Address(
+                            "1Am9UTGfdnxabvcywYG2hvzr6qK8T3oUZT".parse().unwrap(),
+                        )],
+                        is_address: true,
+                    },
+                ],
+                block_hash: "000000000003ba27aa200b1cecaad478d2b00432346c3f1f3986da1afd33e506"
+                    .parse()
+                    .unwrap(),
+                block_height: Height::from_consensus(100_000).unwrap(),
+                confirmations: block.confirmations,
+                block_time: Time::from_consensus(1_293_623_863).unwrap(),
+                value: Amount::from_sat(300_000_000),
+                value_in: Amount::from_sat(300_000_000),
+                fees: Amount::ZERO,
+            },
+            BlockTransaction {
+                txid: "e9a66845e05d5abc0ad04ec80f774a7e585c6e8db975962d069a522137b80c1d"
+                    .parse()
+                    .unwrap(),
+                vin: vec![BlockVin {
+                    n: 0,
+                    addresses: Some(vec!["1JxDJCyWNakZ5kECKdCU9Zka6mh34mZ7B2".parse().unwrap()]),
+                    is_address: true,
+                    value: Amount::from_sat(1_000_000),
+                }],
+                vout: vec![BlockVout {
+                    value: Amount::from_sat(1_000_000),
+                    n: 0,
+                    spent: Some(true),
+                    addresses: vec![AddressBlockVout::Address(
+                        "16FuTPaeRSPVxxCnwQmdyx2PQWxX6HWzhQ".parse().unwrap(),
+                    )],
+                    is_address: true,
+                }],
+                block_hash: "000000000003ba27aa200b1cecaad478d2b00432346c3f1f3986da1afd33e506"
+                    .parse()
+                    .unwrap(),
+                block_height: Height::from_consensus(100_000).unwrap(),
+                confirmations: block.confirmations,
+                block_time: Time::from_consensus(1_293_623_863).unwrap(),
+                value: Amount::from_sat(1_000_000),
+                value_in: Amount::from_sat(1_000_000),
+                fees: Amount::ZERO,
+            },
+        ],
+    };
+    assert_eq!(block, expected_block);
+}
+
+#[tokio::test]
+async fn test_block_by_height_with_opreturn_output() {
+    let block = blockbook()
+        .await
+        .block_by_height(Height::from_consensus(500_044).unwrap())
+        .await
+        .unwrap();
+    let expected_block = Block {
+        page: 1,
+        total_pages: 1,
+        items_on_page: 1000,
+        hash: "0000000000000000001f9ba01120351182680ceba085ffabeaa532cda35f2cc7"
+            .parse()
+            .unwrap(),
+        previous_block_hash: Some(
+            "00000000000000000075807003ae64990ee53422788451b795839f70a177695d"
+                .parse()
+                .unwrap(),
+        ),
+        next_block_hash: Some(
+            "0000000000000000000401882bfcb7e7f14a14e21b827e5fb5981d07a5cea0f2"
+                .parse()
+                .unwrap(),
+        ),
+        height: Height::from_consensus(500_044).unwrap(),
+        confirmations: block.confirmations,
+        size: 285,
+        time: Time::from_consensus(1_513_638_772).unwrap(),
+        version: 536_870_912,
+        merkle_root: "db5f956e4f48e79895021a9f7e64035fd03680e96253aafd438118485bfe49cb"
+            .parse()
+            .unwrap(),
+        nonce: "437791427".into(),
+        bits: "18009645".into(),
+        difficulty: "1873105475221.611".into(),
+        tx_count: 1,
+        txs: vec![BlockTransaction {
+            txid: "db5f956e4f48e79895021a9f7e64035fd03680e96253aafd438118485bfe49cb"
+                .parse()
+                .unwrap(),
+            vin: vec![BlockVin {
+                n: 0,
+                addresses: None,
+                is_address: false,
+                value: Amount::ZERO,
+            }],
+            vout: vec![
+                BlockVout {
+                    value: Amount::from_sat(1_250_000_000),
+                    n: 0,
+                    spent: Some(true),
+                    addresses: vec![AddressBlockVout::Address(
+                        "1NS4gbx1G2D5rc9PnvVsPys12nKxGiQg72".parse().unwrap(),
+                    )],
+                    is_address: true,
+                },
+                BlockVout {
+                    value: Amount::ZERO,
+                    n: 1,
+                    spent: None,
+                    addresses: vec![AddressBlockVout::OpReturn(OpReturn(
+                        "OP_RETURN aa21a9ede2f61c3f71d1defd3fa999dfa36953755c690689799962b48bebd836974e8cf9".into())
+                )],
+                    is_address: false,
+                },
+            ],
+            block_hash: "0000000000000000001f9ba01120351182680ceba085ffabeaa532cda35f2cc7"
+                .parse()
+                .unwrap(),
+            block_height: Height::from_consensus(500_044).unwrap(),
+            confirmations: block.confirmations,
+            block_time: Time::from_consensus(1_513_638_772).unwrap(),
+            value: Amount::from_sat(1_250_000_000),
+            value_in: Amount::ZERO,
+            fees: Amount::ZERO,
+        }],
+    };
+    assert_eq!(block, expected_block);
 }

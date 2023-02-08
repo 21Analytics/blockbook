@@ -1,7 +1,7 @@
 pub use bitcoin::blockdata::locktime::{Height, PackedLockTime, Time};
 pub use bitcoin::blockdata::script::Script;
 pub use bitcoin::blockdata::witness::Witness;
-pub use bitcoin::hash_types::{BlockHash, Txid, Wtxid};
+pub use bitcoin::hash_types::{BlockHash, TxMerkleNode, Txid, Wtxid};
 pub use bitcoin::hashes;
 pub use bitcoin::util::address::Address;
 pub use bitcoin::util::amount::Amount;
@@ -97,7 +97,97 @@ impl Blockbook {
         self.query(format!("/api/v2/tx-specific/{}", txid.as_ref()))
             .await
     }
+
+    // https://github.com/trezor/blockbook/blob/86ff5a9538dba6b869f53850676f9edfc3cb5fa8/docs/api.md#get-block
+    pub async fn block_by_height(&self, height: Height) -> Result<Block> {
+        self.query::<Block>(format!("/api/v2/block/{height}")).await
+    }
+
+    // https://github.com/trezor/blockbook/blob/86ff5a9538dba6b869f53850676f9edfc3cb5fa8/docs/api.md#get-block
+    pub async fn block_by_hash(&self, hash: BlockHash) -> Result<Block> {
+        self.query::<Block>(format!("/api/v2/block/{hash}")).await
+    }
 }
+
+#[derive(Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+#[cfg_attr(feature = "test", serde(deny_unknown_fields))]
+#[serde(rename_all = "camelCase")]
+pub struct Block {
+    pub page: u32,
+    pub total_pages: u32,
+    pub items_on_page: u32,
+    pub hash: BlockHash,
+    pub previous_block_hash: Option<BlockHash>,
+    pub next_block_hash: Option<BlockHash>,
+    pub height: Height,
+    pub confirmations: u32,
+    pub size: u32,
+    pub time: Time,
+    pub version: u32,
+    pub merkle_root: TxMerkleNode,
+    pub nonce: String,
+    pub bits: String,
+    pub difficulty: String,
+    pub tx_count: u32,
+    pub txs: Vec<BlockTransaction>,
+}
+
+#[derive(Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+#[cfg_attr(feature = "test", serde(deny_unknown_fields))]
+#[serde(rename_all = "camelCase")]
+pub struct BlockTransaction {
+    pub txid: Txid,
+    pub vin: Vec<BlockVin>,
+    pub vout: Vec<BlockVout>,
+    pub block_hash: BlockHash,
+    pub block_height: Height,
+    pub confirmations: u32,
+    pub block_time: Time,
+    #[serde(with = "amount")]
+    pub value: Amount,
+    #[serde(with = "amount")]
+    pub value_in: Amount,
+    #[serde(with = "amount")]
+    pub fees: Amount,
+}
+
+#[derive(Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+#[cfg_attr(feature = "test", serde(deny_unknown_fields))]
+#[serde(rename_all = "camelCase")]
+pub struct BlockVin {
+    pub n: u16,
+    /// Can be `None` or multiple addresses for a non-standard script,
+    /// where the latter indicates a multisig input
+    pub addresses: Option<Vec<Address>>,
+    /// Indicates a standard script, See:
+    /// https://github.com/trezor/blockbook/blob/0ebbf16f18551f1c73b59bec6cfcbbdc96ec47e8/bchain/coins/btc/bitcoinlikeparser.go#L193-L194
+    pub is_address: bool,
+    #[serde(with = "amount")]
+    pub value: Amount,
+}
+
+#[derive(Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+#[cfg_attr(feature = "test", serde(deny_unknown_fields))]
+#[serde(rename_all = "camelCase")]
+pub struct BlockVout {
+    #[serde(with = "amount")]
+    pub value: Amount,
+    pub n: u16,
+    pub spent: Option<bool>,
+    pub addresses: Vec<AddressBlockVout>,
+    /// Indicates the `addresses` vector to contain the `Address` `AddressBlockVout` variant
+    pub is_address: bool,
+}
+
+#[derive(Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+#[serde(untagged)]
+pub enum AddressBlockVout {
+    Address(Address),
+    OpReturn(OpReturn),
+}
+
+#[derive(Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+pub struct OpReturn(pub String);
 
 mod amount {
     struct AmountVisitor;
