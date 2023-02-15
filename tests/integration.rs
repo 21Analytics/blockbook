@@ -200,7 +200,7 @@ async fn test_tx_specific() {
                 sequence: Sequence(4_294_967_295),
                 vout: 2,
                 tx_in_witness: Some(Witness::from_vec(vec![Vec::from_hex("3045022100e6bc8783be4d00222da4684b495c0e38578c72bc72d74321b776e777f430b5be02203dce27e811f0cb0b9ebad0d11d541a83344c985ec37a0273993caf582988c0a301").unwrap(), Vec::from_hex("0285b14271e50491ac26111dd42a6d9004f06a8e77355dac918c2fe7b1a7526ff0").unwrap()])),
-                script_sig: Default::default(),
+                script_sig: blockbook::ScriptSig::default(),
             },
             VinSpecific {
                 txid: "e0dd3738219f4882deeacb5a3f9c94de2421cfe16a804a928968f77bf5b6435a"
@@ -209,7 +209,7 @@ async fn test_tx_specific() {
                 sequence: Sequence(4_294_967_295),
                 vout: 0,
                 tx_in_witness: Some(Witness::from_vec(vec![Vec::from_hex("3044022036563b247efe66f50f453a6417d03bca152ad70913d7b69b29d7abcb602dd389022033f841a69c985ba457fb1c41a533fb0bce4b68a3bd42fdec60a89ab66623995901").unwrap(), Vec::from_hex("0285b14271e50491ac26111dd42a6d9004f06a8e77355dac918c2fe7b1a7526ff0").unwrap()])),
-                script_sig: Default::default(),
+                script_sig: blockbook::ScriptSig::default(),
             },
         ],
         vout: vec![
