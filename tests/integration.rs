@@ -102,6 +102,8 @@ async fn test_tx() {
         block_hash: BlockHash::from_hash(hashes::sha256d::Hash::from_str(
                 "00000000000000000006b7e2a7110c174f21633adbe955c8f86f36699bba6716"
         ).unwrap()),
+        size: 402,
+        vsize: 240,
 
     block_height: Height::from_consensus(765_165).unwrap(),
     confirmations: tx.confirmations,

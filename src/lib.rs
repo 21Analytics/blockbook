@@ -232,6 +232,8 @@ pub struct StatusBlockbook {
     pub db_size: u64,
     pub about: String,
     pub has_fiat_rates: bool,
+    pub current_fiat_rates_time: chrono::DateTime<chrono::Utc>,
+    pub historical_fiat_rates_time: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
@@ -315,6 +317,8 @@ pub struct Transaction {
     pub version: u8,
     pub vin: Vec<Vin>,
     pub vout: Vec<Vout>,
+    pub size: u32,
+    pub vsize: u32,
     pub block_hash: BlockHash,
     pub block_height: Height,
     pub confirmations: u32,
