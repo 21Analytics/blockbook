@@ -112,6 +112,15 @@ impl Blockbook {
     pub async fn block_by_hash(&self, hash: BlockHash) -> Result<Block> {
         self.query::<Block>(format!("/api/v2/block/{hash}")).await
     }
+
+    // https://github.com/trezor/blockbook/blob/86ff5a9538dba6b869f53850676f9edfc3cb5fa8/docs/api.md#tickers-list
+    /// The timestamp parameter specifies the point in time the tickers list
+    /// should be obtained from. The API will return a tickers list that is as
+    /// close as possible to the specified timestamp.
+    pub async fn tickers_list(&self, timestamp: Time) -> Result<TickersList> {
+        self.query::<TickersList>(format!("/api/v2/tickers-list/?timestamp={timestamp}"))
+            .await
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
@@ -307,6 +316,81 @@ mod amount {
     {
         serializer.collect_str(&amount.to_sat().to_string())
     }
+}
+
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[cfg_attr(feature = "test", serde(deny_unknown_fields))]
+pub struct TickersList {
+    #[serde(rename = "ts")]
+    pub timestamp: Time,
+    pub available_currencies: Vec<Currency>,
+}
+
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "lowercase")]
+#[non_exhaustive]
+pub enum Currency {
+    Aed,
+    Ars,
+    Aud,
+    Bch,
+    Bdt,
+    Bhd,
+    Bits,
+    Bmd,
+    Bnb,
+    Brl,
+    Btc,
+    Cad,
+    Chf,
+    Clp,
+    Cny,
+    Czk,
+    Dkk,
+    Dot,
+    Eos,
+    Eth,
+    Eur,
+    Gbp,
+    Hkd,
+    Huf,
+    Idr,
+    Ils,
+    Inr,
+    Jpy,
+    Krw,
+    Kwd,
+    Link,
+    Lkr,
+    Ltc,
+    Mmk,
+    Mxn,
+    Myr,
+    Ngn,
+    Nok,
+    Nzd,
+    Php,
+    Pkr,
+    Pln,
+    Rub,
+    Sar,
+    Sats,
+    Sek,
+    Sgd,
+    Thb,
+    Try,
+    Twd,
+    Uah,
+    Usd,
+    Vef,
+    Vnd,
+    Xag,
+    Xau,
+    Xdr,
+    Xlm,
+    Xrp,
+    Yfi,
+    Zar,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]

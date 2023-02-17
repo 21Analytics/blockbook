@@ -1,9 +1,9 @@
 use blockbook::{
     hashes::{self, hex::FromHex},
     Address, AddressBlockVout, Amount, Asset, Block, BlockHash, BlockTransaction, BlockVin,
-    BlockVout, Chain, Height, OpReturn, PackedLockTime, ScriptPubKey, ScriptPubKeyType, ScriptSig,
-    Sequence, Time, Transaction, TransactionSpecific, Vin, VinSpecific, Vout, VoutSpecific,
-    Witness,
+    BlockVout, Chain, Currency, Height, OpReturn, PackedLockTime, ScriptPubKey, ScriptPubKeyType,
+    ScriptSig, Sequence, TickersList, Time, Transaction, TransactionSpecific, Vin, VinSpecific,
+    Vout, VoutSpecific, Witness,
 };
 use std::str::FromStr;
 
@@ -570,4 +570,85 @@ async fn test_block_by_height_with_opreturn_output() {
         }],
     };
     assert_eq!(block, expected_block);
+}
+
+#[tokio::test]
+async fn test_tickers_list() {
+    let tickers_list = blockbook()
+        .await
+        .tickers_list(Time::from_consensus(1_674_821_349).unwrap())
+        .await
+        .unwrap();
+    let expected_tickers_list = TickersList {
+        timestamp: Time::from_consensus(1_674_864_000).unwrap(),
+        available_currencies: vec![
+            Currency::Aed,
+            Currency::Ars,
+            Currency::Aud,
+            Currency::Bdt,
+            Currency::Bhd,
+            Currency::Bmd,
+            Currency::Brl,
+            Currency::Btc,
+            Currency::Cad,
+            Currency::Chf,
+            Currency::Clp,
+            Currency::Cny,
+            Currency::Czk,
+            Currency::Dkk,
+            Currency::Eth,
+            Currency::Eur,
+            Currency::Gbp,
+            Currency::Hkd,
+            Currency::Huf,
+            Currency::Idr,
+            Currency::Ils,
+            Currency::Inr,
+            Currency::Jpy,
+            Currency::Krw,
+            Currency::Kwd,
+            Currency::Lkr,
+            Currency::Mmk,
+            Currency::Mxn,
+            Currency::Myr,
+            Currency::Ngn,
+            Currency::Nok,
+            Currency::Nzd,
+            Currency::Php,
+            Currency::Pkr,
+            Currency::Pln,
+            Currency::Rub,
+            Currency::Sar,
+            Currency::Sek,
+            Currency::Sgd,
+            Currency::Thb,
+            Currency::Try,
+            Currency::Twd,
+            Currency::Uah,
+            Currency::Usd,
+            Currency::Vef,
+            Currency::Vnd,
+            Currency::Zar,
+        ],
+    };
+    assert_eq!(tickers_list, expected_tickers_list);
+}
+
+#[tokio::test]
+async fn test_current_tickers_list() {
+    blockbook()
+        .await
+        .tickers_list(
+            Time::from_consensus(
+                std::time::SystemTime::now()
+                    .duration_since(std::time::SystemTime::UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs()
+                    .try_into()
+                    .unwrap(),
+            )
+            .unwrap(),
+        )
+        .await
+        .unwrap();
 }
