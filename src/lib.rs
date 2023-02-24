@@ -114,7 +114,7 @@ impl Blockbook {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 #[serde(rename_all = "camelCase")]
 pub struct Block {
@@ -137,7 +137,7 @@ pub struct Block {
     pub txs: Vec<BlockTransaction>,
 }
 
-#[derive(Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 #[serde(rename_all = "camelCase")]
 pub struct BlockTransaction {
@@ -156,7 +156,7 @@ pub struct BlockTransaction {
     pub fees: Amount,
 }
 
-#[derive(Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 #[serde(rename_all = "camelCase")]
 pub struct BlockVin {
@@ -171,7 +171,7 @@ pub struct BlockVin {
     pub value: Amount,
 }
 
-#[derive(Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 #[serde(rename_all = "camelCase")]
 pub struct BlockVout {
@@ -184,14 +184,14 @@ pub struct BlockVout {
     pub is_address: bool,
 }
 
-#[derive(Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(untagged)]
 pub enum AddressBlockVout {
     Address(Address),
     OpReturn(OpReturn),
 }
 
-#[derive(Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct OpReturn(pub String);
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
