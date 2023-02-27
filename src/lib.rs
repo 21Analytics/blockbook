@@ -318,7 +318,7 @@ mod amount {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 pub struct TickersList {
     #[serde(rename = "ts")]
@@ -326,7 +326,7 @@ pub struct TickersList {
     pub available_currencies: Vec<Currency>,
 }
 
-#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "lowercase")]
 #[non_exhaustive]
 pub enum Currency {
