@@ -153,6 +153,185 @@ impl Blockbook {
         ))
         .await
     }
+
+    // https://github.com/trezor/blockbook/blob/211aeff22d6f9ce59b26895883aa85905bba566b/docs/api.md#get-address
+    pub async fn address_info_specific_basic(
+        &self,
+        address: &Address,
+        page: Option<&std::num::NonZeroU32>,
+        pagesize: Option<&std::num::NonZeroU16>,
+        from: Option<&Height>,
+        to: Option<&Height>,
+        also_in: Option<&Currency>,
+    ) -> Result<AddressInfoBasic> {
+        let mut query_pairs = url::form_urlencoded::Serializer::new(String::new());
+        query_pairs.append_pair("details", "basic");
+        if let Some(p) = page {
+            query_pairs.append_pair("page", &p.to_string());
+        }
+        if let Some(ps) = pagesize {
+            query_pairs.append_pair("pageSize", &ps.to_string());
+        }
+        if let Some(start_block) = from {
+            query_pairs.append_pair("from", &start_block.to_string());
+        }
+        if let Some(end_block) = to {
+            query_pairs.append_pair("to", &end_block.to_string());
+        }
+        if let Some(currency) = also_in {
+            query_pairs.append_pair("secondary", &format!("{currency:?}"));
+        }
+        self.query::<AddressInfoBasic>(format!(
+            "/api/v2/address/{address}?{}",
+            query_pairs.finish()
+        ))
+        .await
+    }
+
+    // https://github.com/trezor/blockbook/blob/211aeff22d6f9ce59b26895883aa85905bba566b/docs/api.md#get-address
+    pub async fn address_info(&self, address: &Address) -> Result<AddressInfo> {
+        self.query::<AddressInfo>(format!("/api/v2/address/{address}"))
+            .await
+    }
+
+    // https://github.com/trezor/blockbook/blob/211aeff22d6f9ce59b26895883aa85905bba566b/docs/api.md#get-address
+    pub async fn address_info_specific(
+        &self,
+        address: &Address,
+        page: Option<&std::num::NonZeroU32>,
+        pagesize: Option<&std::num::NonZeroU16>,
+        from: Option<&Height>,
+        to: Option<&Height>,
+        also_in: Option<&Currency>,
+    ) -> Result<AddressInfo> {
+        let mut query_pairs = url::form_urlencoded::Serializer::new(String::new());
+        if let Some(p) = page {
+            query_pairs.append_pair("page", &p.to_string());
+        }
+        if let Some(ps) = pagesize {
+            query_pairs.append_pair("pageSize", &ps.to_string());
+        }
+        if let Some(start_block) = from {
+            query_pairs.append_pair("from", &start_block.to_string());
+        }
+        if let Some(end_block) = to {
+            query_pairs.append_pair("to", &end_block.to_string());
+        }
+        if let Some(currency) = also_in {
+            query_pairs.append_pair("secondary", &format!("{currency:?}"));
+        }
+        self.query::<AddressInfo>(format!(
+            "/api/v2/address/{address}?{}",
+            query_pairs.finish()
+        ))
+        .await
+    }
+
+    // https://github.com/trezor/blockbook/blob/211aeff22d6f9ce59b26895883aa85905bba566b/docs/api.md#get-address
+    /// The `details` parameter specifies how much information should
+    /// be returned for the transactions in question:
+    /// - [`Tx::TxsLight`]: A list of abbreviated transaction information
+    /// - [`Tx::Txs`]: A list of detailed transaction information
+    #[allow(clippy::too_many_arguments)]
+    pub async fn address_info_specific_detailed(
+        &self,
+        address: &Address,
+        page: Option<&std::num::NonZeroU32>,
+        pagesize: Option<&std::num::NonZeroU16>,
+        from: Option<&Height>,
+        to: Option<&Height>,
+        details: &TxDetail,
+        also_in: Option<&Currency>,
+    ) -> Result<AddressInfoDetailed> {
+        let mut query_pairs = url::form_urlencoded::Serializer::new(String::new());
+        query_pairs.append_pair("details", details.as_str());
+        if let Some(p) = page {
+            query_pairs.append_pair("page", &p.to_string());
+        }
+        if let Some(ps) = pagesize {
+            query_pairs.append_pair("pageSize", &ps.to_string());
+        }
+        if let Some(start_block) = from {
+            query_pairs.append_pair("from", &start_block.to_string());
+        }
+        if let Some(end_block) = to {
+            query_pairs.append_pair("to", &end_block.to_string());
+        }
+        if let Some(currency) = also_in {
+            query_pairs.append_pair("secondary", &format!("{currency:?}"));
+        }
+        self.query::<AddressInfoDetailed>(format!(
+            "/api/v2/address/{address}?{}",
+            query_pairs.finish()
+        ))
+        .await
+    }
+}
+
+pub enum TxDetail {
+    Light,
+    Full,
+}
+
+impl TxDetail {
+    fn as_str(&self) -> &'static str {
+        match self {
+            TxDetail::Light => "txslight",
+            TxDetail::Full => "txs",
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AddressInfoPaging {
+    pub page: u32,
+    pub total_pages: u32,
+    pub items_on_page: u32,
+}
+
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AddressInfoDetailed {
+    #[serde(flatten)]
+    pub paging: AddressInfoPaging,
+    #[serde(flatten)]
+    pub basic: AddressInfoBasic,
+    pub transactions: Vec<Tx>,
+}
+
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AddressInfo {
+    #[serde(flatten)]
+    pub paging: AddressInfoPaging,
+    #[serde(flatten)]
+    pub basic: AddressInfoBasic,
+    pub txids: Vec<Txid>,
+}
+
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AddressInfoBasic {
+    pub address: Address,
+    #[serde(with = "amount")]
+    pub balance: Amount,
+    #[serde(with = "amount")]
+    pub total_received: Amount,
+    #[serde(with = "amount")]
+    pub total_sent: Amount,
+    #[serde(with = "amount")]
+    pub unconfirmed_balance: Amount,
+    pub unconfirmed_txs: u32,
+    pub txs: u32,
+    pub secondary_value: Option<f64>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+#[serde(untagged)]
+pub enum Tx {
+    Ordinary(Transaction),
+    Light(BlockTransaction),
 }
 
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
@@ -206,7 +385,6 @@ pub struct BlockTransaction {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
-#[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 #[serde(rename_all = "camelCase")]
 pub struct BlockVin {
     pub n: u16,
@@ -221,7 +399,6 @@ pub struct BlockVin {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
-#[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 #[serde(rename_all = "camelCase")]
 pub struct BlockVout {
     #[serde(with = "amount")]
@@ -460,7 +637,6 @@ pub struct Transaction {
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 pub struct Vin {
     pub txid: Txid,
     pub vout: Option<u16>,
@@ -474,7 +650,6 @@ pub struct Vin {
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 pub struct Vout {
     #[serde(with = "amount")]
     pub value: Amount,

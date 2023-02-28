@@ -1,9 +1,10 @@
 use blockbook::{
     hashes::{self, hex::FromHex},
     websocket::{Backend, Client, Info},
-    Address, AddressBlockVout, Amount, Asset, Block, BlockHash, BlockTransaction, BlockVin,
-    BlockVout, Chain, Currency, Height, OpReturn, PackedLockTime, ScriptPubKey, ScriptPubKeyType,
-    ScriptSig, Sequence, Ticker, TickersList, Time, Transaction, TransactionSpecific, Vin,
+    Address, AddressBlockVout, AddressInfo, AddressInfoBasic, AddressInfoDetailed,
+    AddressInfoPaging, Amount, Asset, Block, BlockHash, BlockTransaction, BlockVin, BlockVout,
+    Chain, Currency, Height, OpReturn, PackedLockTime, ScriptPubKey, ScriptPubKeyType, ScriptSig,
+    Sequence, Ticker, TickersList, Time, Transaction, TransactionSpecific, Tx, TxDetail, Txid, Vin,
     VinSpecific, Vout, VoutSpecific, Witness,
 };
 use futures::StreamExt;
@@ -854,4 +855,351 @@ async fn test_get_info_ws() {
         },
     };
     assert_eq!(info, expected_info);
+}
+
+fn addr_1() -> Address {
+    "bc1qsej2fzpejkar82t8nyc2dhkvk54kn905vpvzpw"
+        .parse()
+        .unwrap()
+}
+
+#[tokio::test]
+async fn test_address_info() {
+    let address_info = blockbook().await.address_info(&addr_1()).await.unwrap();
+    assert_eq!(&address_info.basic.address, &addr_1());
+    assert_eq!(
+        address_info.txids.last().unwrap(),
+        &Txid::from_str("98f08111f08baba3d33af28c74facc223a07d868c0568258980119761dea441d")
+            .unwrap()
+    );
+}
+
+#[tokio::test]
+async fn test_address_info_specific_no_args() {
+    let address_info = blockbook()
+        .await
+        .address_info_specific(&addr_1(), None, None, None, None, None)
+        .await
+        .unwrap();
+    assert_eq!(&address_info.basic.address, &addr_1());
+    assert_eq!(
+        address_info.txids.last().unwrap(),
+        &Txid::from_str("98f08111f08baba3d33af28c74facc223a07d868c0568258980119761dea441d")
+            .unwrap()
+    );
+}
+
+#[tokio::test]
+async fn test_address_info_specific_page() {
+    let address: Address = "1CounterpartyXXXXXXXXXXXXXXXUWLpVr".parse().unwrap();
+    let number_of_txs = blockbook()
+        .await
+        .address_info_specific_basic(&address, None, None, None, None, None)
+        .await
+        .unwrap()
+        .txs;
+    let address_info = blockbook()
+        .await
+        .address_info_specific(
+            &address,
+            Some(&std::num::NonZeroU32::new(number_of_txs).unwrap()),
+            Some(&std::num::NonZeroU16::new(1).unwrap()),
+            None,
+            None,
+            None,
+        )
+        .await
+        .unwrap();
+    assert_eq!(&address_info.basic.address, &address);
+    assert_eq!(
+        address_info.txids.get(0).unwrap(),
+        &Txid::from_str("685623401c3f5e9d2eaaf0657a50454e56a270ee7630d409e98d3bc257560098")
+            .unwrap(),
+    );
+}
+
+fn addr_2() -> Address {
+    "3Kzh9qAqVWQhEsfQz7zEQL1EuSx5tyNLNS".parse().unwrap()
+}
+
+#[tokio::test]
+async fn test_address_info_specific_blocks_basic() {
+    let address_info = blockbook()
+        .await
+        .address_info_specific_basic(
+            &addr_2(),
+            None,
+            None,
+            Some(&Height::from_consensus(500_000).unwrap()),
+            Some(&Height::from_consensus(503_000).unwrap()),
+            Some(&Currency::Usd),
+        )
+        .await
+        .unwrap();
+    assert_eq!(&address_info.address, &addr_2());
+}
+
+#[tokio::test]
+async fn test_address_info_specific_blocks() {
+    let address_info = blockbook()
+        .await
+        .address_info_specific(
+            &addr_2(),
+            None,
+            None,
+            Some(&Height::from_consensus(500_000).unwrap()),
+            Some(&Height::from_consensus(503_000).unwrap()),
+            None,
+        )
+        .await
+        .unwrap();
+    let expected_address_info = AddressInfo {
+        paging: AddressInfoPaging {
+            page: 1,
+            total_pages: address_info.paging.total_pages,
+            items_on_page: 1000,
+        },
+        basic: AddressInfoBasic {
+            address: addr_2(),
+            balance: address_info.basic.balance,
+            total_received: address_info.basic.total_received,
+            total_sent: address_info.basic.total_sent,
+            unconfirmed_balance: address_info.basic.unconfirmed_balance,
+            unconfirmed_txs: address_info.basic.unconfirmed_txs,
+            txs: address_info.basic.txs,
+            secondary_value: None,
+        },
+        txids: vec![
+            "ae1484c0cecf39700bb1697793bec24fbb1980207eeb1374eb293a5c403ac8c3"
+                .parse()
+                .unwrap(),
+            "a4b4b879af01563cccadca66d36a0f47afcf78f263bed0966df8abf0a2699f3d"
+                .parse()
+                .unwrap(),
+            "e09390893277b6957cf93ad9ec4b72c6c140aceaa8e62874151ebfca403a76e1"
+                .parse()
+                .unwrap(),
+            "67a6147be5216a0b77e87002e9911f62e2b3dcfa44ce15e8c28e39d77860c59e"
+                .parse()
+                .unwrap(),
+            "2c3ca46df14114490e5d22ddcbcf08a730854e7554a54094c0fb4d7b7a576ed7"
+                .parse()
+                .unwrap(),
+        ],
+    };
+    assert_eq!(address_info, expected_address_info);
+}
+
+#[tokio::test]
+async fn test_address_info_specific_blocks_details() {
+    let address_info = blockbook()
+        .await
+        .address_info_specific_detailed(
+            &addr_2(),
+            None,
+            None,
+            Some(&Height::from_consensus(501_000).unwrap()),
+            Some(&Height::from_consensus(502_000).unwrap()),
+            &TxDetail::Full,
+            Some(&Currency::Zar),
+        )
+        .await
+        .unwrap();
+    let expected_address_info = AddressInfoDetailed {
+        paging: AddressInfoPaging {
+            page: 1,
+            total_pages: address_info.paging.total_pages,
+            items_on_page: 1000,
+        },
+        basic: AddressInfoBasic {
+            address: addr_2(),
+            balance: address_info.basic.balance,
+            total_received: address_info.basic.total_received,
+            total_sent: address_info.basic.total_sent,
+            unconfirmed_balance: address_info.basic.unconfirmed_balance,
+            unconfirmed_txs: address_info.basic.unconfirmed_txs,
+            txs: address_info.basic.txs,
+            secondary_value: address_info.basic.secondary_value,
+        },
+        transactions: vec![Tx::Ordinary(Transaction {
+            txid: "67a6147be5216a0b77e87002e9911f62e2b3dcfa44ce15e8c28e39d77860c59e"
+                .parse()
+                .unwrap(),
+            version: 1,
+            lock_time: None,
+            vin: vec![Vin {
+                txid: "a563f78cac895c1abf411eb93000f751cf20c94e9f32360e643841e37080f906"
+                    .parse()
+                    .unwrap(),
+                vout: Some(1),
+                sequence: Some(Sequence(4_294_967_295)),
+                is_address: true,
+                value: Amount::from_sat(3_084_293),
+                n: 0,
+                addresses: vec!["1LyqvGRjLoznNX2RbytTvuyswDpDVqoYt7".parse().unwrap()],
+            }],
+            vout: vec![
+                Vout {
+                    value: Amount::from_sat(11_700),
+                    n: 0,
+                    spent: Some(true),
+                    script: "a914c8ca150ee82589d47f69b8dcd7cad684d88283f187"
+                        .parse()
+                        .unwrap(),
+                    addresses: vec![addr_2()],
+                    is_address: true,
+                },
+                Vout {
+                    value: Amount::from_sat(3_049_993),
+                    n: 1,
+                    spent: Some(true),
+                    script: "76a9147d55684397c290fbc638bdc52528350088b8837488ac"
+                        .parse()
+                        .unwrap(),
+                    addresses: vec!["1CRhnBV2q8ToQcaKMBBkeooJdNX9ohSWDc".parse().unwrap()],
+                    is_address: true,
+                },
+            ],
+            size: 223,
+            vsize: 223,
+            block_hash: "0000000000000000001617fb8817ecd53e1093247bcf813b2eae793033af0c0a"
+                .parse()
+                .unwrap(),
+            block_height: Height::from_consensus(501_498).unwrap(),
+            confirmations: if let Tx::Ordinary(tx) = &address_info.transactions.get(0).unwrap() {
+                tx.confirmations
+            } else {
+                panic!()
+            },
+            block_time: Time::from_consensus(1_514_513_020).unwrap(),
+            value: Amount::from_sat(3_061_693),
+            value_in: Amount::from_sat(3_084_293),
+            fees: Amount::from_sat(22_600),
+            script: "010000000106f98070e34138640e36329f4ec920cf51f70030b91e41bf1a5c89ac8cf763a5010000006a47304402200a54b9076c0fd91c3bcaa5c55a0721d18893b6aa204c87198d072555aff3bf2e02206aa296427da8eb404203044e9e33d5f69dbbdbc43be95dd4ac5c675b8c341c7301210241d3f009960b9695c8b7c546128aa4d01daf57c4ff562f6d1f30c2a85119af1cffffffff02b42d00000000000017a914c8ca150ee82589d47f69b8dcd7cad684d88283f187098a2e00000000001976a9147d55684397c290fbc638bdc52528350088b8837488ac00000000".parse().unwrap(),
+        })],
+    };
+    assert_eq!(&address_info, &expected_address_info);
+}
+
+#[tokio::test]
+async fn test_address_info_specific_blocks_details_light() {
+    let address_info = blockbook()
+        .await
+        .address_info_specific_detailed(
+            &addr_2(),
+            None,
+            None,
+            Some(&Height::from_consensus(501_000).unwrap()),
+            Some(&Height::from_consensus(502_000).unwrap()),
+            &TxDetail::Light,
+            None,
+        )
+        .await
+        .unwrap();
+    let expected_address_info = AddressInfoDetailed {
+        paging: AddressInfoPaging {
+            page: 1,
+            total_pages: address_info.paging.total_pages,
+            items_on_page: 1000,
+        },
+        basic: AddressInfoBasic {
+            address: addr_2(),
+            balance: address_info.basic.balance,
+            total_received: address_info.basic.total_received,
+            total_sent: address_info.basic.total_sent,
+            unconfirmed_balance: address_info.basic.unconfirmed_balance,
+            unconfirmed_txs: address_info.basic.unconfirmed_txs,
+            txs: address_info.basic.txs,
+            secondary_value: None,
+        },
+        transactions: vec![Tx::Light(BlockTransaction {
+            txid: "67a6147be5216a0b77e87002e9911f62e2b3dcfa44ce15e8c28e39d77860c59e"
+                .parse()
+                .unwrap(),
+            vin: vec![BlockVin {
+                is_address: true,
+                value: Amount::from_sat(3_084_293),
+                n: 0,
+                addresses: Some(vec!["1LyqvGRjLoznNX2RbytTvuyswDpDVqoYt7".parse().unwrap()]),
+            }],
+            vout: vec![
+                BlockVout {
+                    value: Amount::from_sat(11_700),
+                    n: 0,
+                    spent: Some(true),
+                    addresses: vec![AddressBlockVout::Address(addr_2())],
+                    is_address: true,
+                },
+                BlockVout {
+                    value: Amount::from_sat(3_049_993),
+                    n: 1,
+                    spent: Some(true),
+                    addresses: vec![AddressBlockVout::Address(
+                        "1CRhnBV2q8ToQcaKMBBkeooJdNX9ohSWDc".parse().unwrap(),
+                    )],
+                    is_address: true,
+                },
+            ],
+            block_hash: "0000000000000000001617fb8817ecd53e1093247bcf813b2eae793033af0c0a"
+                .parse()
+                .unwrap(),
+            block_height: Height::from_consensus(501_498).unwrap(),
+            confirmations: if let Tx::Light(tx) = &address_info.transactions.get(0).unwrap() {
+                tx.confirmations
+            } else {
+                panic!()
+            },
+            block_time: Time::from_consensus(1_514_513_020).unwrap(),
+            value: Amount::from_sat(3_061_693),
+            value_in: Amount::from_sat(3_084_293),
+            fees: Amount::from_sat(22_600),
+        })],
+    };
+    assert_eq!(&address_info, &expected_address_info);
+}
+
+#[tokio::test]
+async fn test_address_info_correct_variant_full() {
+    let address_info_full = blockbook()
+        .await
+        .address_info_specific_detailed(
+            &"bc1qhjhn2gm6mv4k99942ud4spe54483drh330faax"
+                .parse()
+                .unwrap(),
+            None,
+            None,
+            None,
+            None,
+            &TxDetail::Full,
+            None,
+        )
+        .await
+        .unwrap();
+    assert!(matches!(
+        address_info_full.transactions.get(0).unwrap(),
+        Tx::Ordinary(..)
+    ));
+}
+
+#[tokio::test]
+async fn test_address_info_correct_variant_light() {
+    let address_info_light = blockbook()
+        .await
+        .address_info_specific_detailed(
+            &"bc1qhjhn2gm6mv4k99942ud4spe54483drh330faax"
+                .parse()
+                .unwrap(),
+            None,
+            None,
+            None,
+            None,
+            &TxDetail::Light,
+            None,
+        )
+        .await
+        .unwrap();
+    assert!(matches!(
+        address_info_light.transactions.get(0).unwrap(),
+        Tx::Light(..)
+    ));
 }
