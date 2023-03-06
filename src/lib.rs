@@ -7,6 +7,7 @@ pub use bitcoin::hash_types::{BlockHash, TxMerkleNode, Txid, Wtxid};
 pub use bitcoin::hashes;
 pub use bitcoin::util::address::Address;
 pub use bitcoin::util::amount::Amount;
+pub use bitcoin::util::bip32::DerivationPath;
 pub use bitcoin::Sequence;
 pub use reqwest::Error as ReqwestError;
 pub use url::ParseError;
@@ -266,6 +267,22 @@ impl Blockbook {
         ))
         .await
     }
+
+    // https://github.com/trezor/blockbook/blob/78cf3c264782e60a147031c6ae80b3ab1f704783/docs/api.md#get-utxo
+    pub async fn utxos_from_address(
+        &self,
+        address: Address,
+        confirmed_only: bool,
+    ) -> Result<Vec<Utxo>> {
+        self.query::<Vec<Utxo>>(format!("/api/v2/utxo/{address}?confirmed={confirmed_only}"))
+            .await
+    }
+
+    // https://github.com/trezor/blockbook/blob/78cf3c264782e60a147031c6ae80b3ab1f704783/docs/api.md#get-utxo
+    pub async fn utxos_from_xpub(&self, xpub: &str, confirmed_only: bool) -> Result<Vec<Utxo>> {
+        self.query::<Vec<Utxo>>(format!("/api/v2/utxo/{xpub}?confirmed={confirmed_only}"))
+            .await
+    }
 }
 
 pub enum TxDetail {
@@ -332,6 +349,22 @@ pub struct AddressInfoBasic {
 pub enum Tx {
     Ordinary(Transaction),
     Light(BlockTransaction),
+}
+
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[cfg_attr(feature = "test", serde(deny_unknown_fields))]
+pub struct Utxo {
+    pub txid: Txid,
+    pub vout: u32,
+    #[serde(with = "amount")]
+    pub value: Amount,
+    pub height: Option<Height>,
+    pub confirmations: u32,
+    #[serde(rename = "lockTime")]
+    pub locktime: Option<Time>,
+    pub coinbase: Option<bool>,
+    pub address: Option<Address>,
+    pub path: Option<DerivationPath>,
 }
 
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]

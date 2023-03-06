@@ -4,8 +4,8 @@ use blockbook::{
     Address, AddressBlockVout, AddressInfo, AddressInfoBasic, AddressInfoDetailed,
     AddressInfoPaging, Amount, Asset, Block, BlockHash, BlockTransaction, BlockVin, BlockVout,
     Chain, Currency, Height, OpReturn, PackedLockTime, ScriptPubKey, ScriptPubKeyType, ScriptSig,
-    Sequence, Ticker, TickersList, Time, Transaction, TransactionSpecific, Tx, TxDetail, Txid, Vin,
-    VinSpecific, Vout, VoutSpecific, Witness,
+    Sequence, Ticker, TickersList, Time, Transaction, TransactionSpecific, Tx, TxDetail, Txid,
+    Utxo, Vin, VinSpecific, Vout, VoutSpecific, Witness,
 };
 use futures::StreamExt;
 use std::str::FromStr;
@@ -1249,4 +1249,57 @@ async fn test_address_info_correct_variant_light() {
         address_info_light.transactions.get(0).unwrap(),
         Tx::Light(..)
     ));
+}
+
+#[tokio::test]
+async fn test_utxos_from_address() {
+    let utxos = blockbook()
+        .await
+        .utxos_from_address("1CounterpartyXXXXXXXXXXXXXXXUWLpVr".parse().unwrap(), false)
+        .await
+        .unwrap();
+    let last_utxo = Utxo {
+        txid: "685623401c3f5e9d2eaaf0657a50454e56a270ee7630d409e98d3bc257560098"
+            .parse()
+            .unwrap(),
+        vout: 0,
+        value: Amount::from_sat(50_000),
+        height: Some(Height::from_consensus(278_319).unwrap()),
+        confirmations: utxos.last().unwrap().confirmations,
+        locktime: None,
+        coinbase: None,
+        address: None,
+        path: None,
+    };
+    assert_eq!(utxos.last().unwrap(), &last_utxo);
+}
+
+#[tokio::test]
+async fn test_utxos_from_xpub() {
+    let utxos = blockbook()
+        .await
+        .utxos_from_xpub(
+            "zpub6qd36EtRVbyDyJToANn1vnuvhGenvepKnjeUzBXDk7JE4JYBxGUAPbjh22QqZ7JkRGuAtpgBfgKP1iT9GzgQxP1TgKPEBoN3e3vN3WtY2Su",
+            true,
+        )
+        .await
+        .unwrap();
+    let expected_utxo = Utxo {
+        txid: "d60691ecdf678eb3f88ebfaf315d3907d0be62ccd40fd1f027938249966f268d"
+            .parse()
+            .unwrap(),
+        vout: 1,
+        value: Amount::from_sat(821),
+        height: Some(Height::from_consensus(784_027).unwrap()),
+        confirmations: utxos.get(0).unwrap().confirmations,
+        locktime: None,
+        address: Some(
+            "bc1q5au2nmza9pmplnvgzyd4ky7egu2wya56qa024u"
+                .parse()
+                .unwrap(),
+        ),
+        path: Some("m/84'/0'/0'/0/0".parse().unwrap()),
+        coinbase: None,
+    };
+    assert_eq!(utxos.get(0).unwrap(), &expected_utxo);
 }
