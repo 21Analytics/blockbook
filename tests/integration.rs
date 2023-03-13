@@ -153,7 +153,7 @@ async fn test_tx() {
         Vout {
             value: Amount::from_sat(10_273_270),
             n: 1,
-            spent: None,
+            spent: Some(true),
             script: "0014e1a8d8ab85131ec8a9521ad2e7daf16bcf3fe9e2".parse().unwrap(),
             addresses: vec!["bc1qux5d32u9zv0v322jrtfw0kh3d08nl60z8q964g"
                 .parse::<Address>()
@@ -551,7 +551,7 @@ async fn test_block_by_height_with_opreturn_output() {
                 BlockVout {
                     value: Amount::ZERO,
                     n: 1,
-                    spent: None,
+                    spent: block.txs.get(0).unwrap().vout.get(1).unwrap().spent,
                     addresses: vec![AddressBlockVout::OpReturn(OpReturn(
                         "OP_RETURN aa21a9ede2f61c3f71d1defd3fa999dfa36953755c690689799962b48bebd836974e8cf9".into())
                 )],
