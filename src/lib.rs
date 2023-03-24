@@ -439,6 +439,7 @@ pub enum Currency {
 pub struct Transaction {
     pub txid: Txid,
     pub version: u8,
+    pub lock_time: Option<Height>,
     pub vin: Vec<Vin>,
     pub vout: Vec<Vout>,
     pub size: u32,
