@@ -1,10 +1,12 @@
 use blockbook::{
     hashes::{self, hex::FromHex},
+    websocket::{Backend, Client, Info},
     Address, AddressBlockVout, Amount, Asset, Block, BlockHash, BlockTransaction, BlockVin,
     BlockVout, Chain, Currency, Height, OpReturn, PackedLockTime, ScriptPubKey, ScriptPubKeyType,
     ScriptSig, Sequence, Ticker, TickersList, Time, Transaction, TransactionSpecific, Vin,
     VinSpecific, Vout, VoutSpecific, Witness,
 };
+use futures::StreamExt;
 use std::str::FromStr;
 
 static QUEUED_BLOCKBOOKS: once_cell::sync::Lazy<
@@ -55,6 +57,70 @@ async fn blockbook() -> QueuedBlockbook {
     loop {
         if let Some(queued_blockbook) = {
             let blockbook = QUEUED_BLOCKBOOKS.lock().unwrap().pop_front();
+            blockbook
+        } {
+            tokio::time::sleep(queued_blockbook.timeout).await;
+            return queued_blockbook;
+        }
+        tokio::task::yield_now().await;
+    }
+}
+
+static QUEUED_BLOCKBOOKS_WS: tokio::sync::OnceCell<
+    std::sync::Arc<std::sync::Mutex<std::collections::VecDeque<QueuedBlockbookWs>>>,
+> = tokio::sync::OnceCell::const_new();
+
+struct QueuedBlockbookWs {
+    blockbook: std::sync::Arc<tokio::sync::Mutex<Client>>,
+    timeout: std::time::Duration,
+}
+
+impl Drop for QueuedBlockbookWs {
+    fn drop(&mut self) {
+        let blockbook = self.blockbook.clone();
+        tokio::spawn(async move {
+            QUEUED_BLOCKBOOKS_WS
+                .get_or_init(blockbooks_ws)
+                .await
+                .lock()
+                .unwrap()
+                .push_back(QueuedBlockbookWs {
+                    blockbook,
+                    timeout: std::time::Duration::from_millis(500),
+                });
+        });
+    }
+}
+
+async fn blockbooks_ws(
+) -> std::sync::Arc<std::sync::Mutex<std::collections::VecDeque<QueuedBlockbookWs>>> {
+    std::sync::Arc::new(std::sync::Mutex::new(
+        (1..6)
+            .filter(|&i| i != 4)
+            .map(|i| {
+                Client::new(url::Url::parse(&format!("wss://btc{i}.trezor.io/websocket")).unwrap())
+            })
+            .collect::<futures::stream::FuturesUnordered<_>>()
+            .collect::<Vec<_>>()
+            .await
+            .into_iter()
+            .map(|blockbook| QueuedBlockbookWs {
+                blockbook: std::sync::Arc::new(tokio::sync::Mutex::new(blockbook.unwrap())),
+                timeout: std::time::Duration::ZERO,
+            })
+            .collect(),
+    ))
+}
+
+async fn blockbook_ws() -> QueuedBlockbookWs {
+    loop {
+        if let Some(queued_blockbook) = {
+            let blockbook = QUEUED_BLOCKBOOKS_WS
+                .get_or_init(blockbooks_ws)
+                .await
+                .lock()
+                .unwrap()
+                .pop_front();
             blockbook
         } {
             tokio::time::sleep(queued_blockbook.timeout).await;
@@ -735,4 +801,27 @@ async fn test_ticker() {
         rates: std::collections::HashMap::from([(Currency::Idr, 344_337_380.0)]),
     };
     assert_eq!(ticker, expected_ticker);
+}
+
+#[tokio::test]
+async fn test_get_info_ws() {
+    let client = blockbook_ws().await;
+    let info = client.blockbook.lock().await.get_info().await.unwrap();
+    let expected_info = Info {
+        name: "Bitcoin".into(),
+        shortcut: "BTC".into(),
+        decimals: 8,
+        version: semver::Version::new(0, 4, 0),
+        best_height: info.best_height,
+        best_hash: info.best_hash,
+        block_0_hash: "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"
+            .parse()
+            .unwrap(),
+        testnet: false,
+        backend: Backend {
+            version: "240001".into(),
+            subversion: "/Satoshi:24.0.1/".into(),
+        },
+    };
+    assert_eq!(info, expected_info);
 }
