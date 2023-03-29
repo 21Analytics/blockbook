@@ -91,6 +91,7 @@ enum StreamingResponse {
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 enum OneOffResponse {
     Info(Info),
+    BlockHash { hash: super::BlockHash },
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -275,6 +276,29 @@ impl Client {
         rx.next().await.unwrap().and_then(|resp| {
             if let Response::OneOff(OneOffResponse::Info(i)) = resp {
                 return Ok(i);
+            }
+            Err(Error::DataObjectMismatch)
+        })
+    }
+
+    pub async fn get_blockhash(&mut self, height: super::Height) -> Result<super::BlockHash> {
+        #[derive(serde::Serialize)]
+        struct Params {
+            height: super::Height,
+        }
+
+        let (tx, mut rx) = futures::channel::mpsc::channel(1);
+        self.jobs
+            .send(Job {
+                method: "getBlockHash",
+                params: Some(Box::new(Params { height })),
+                response_channel: tx,
+            })
+            .await
+            .unwrap();
+        rx.next().await.unwrap().and_then(|resp| {
+            if let Response::OneOff(OneOffResponse::BlockHash { hash }) = resp {
+                return Ok(hash);
             }
             Err(Error::DataObjectMismatch)
         })

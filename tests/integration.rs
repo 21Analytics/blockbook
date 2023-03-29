@@ -808,6 +808,20 @@ async fn test_get_info_ws() {
     assert_eq!(info, expected_info);
 }
 
+#[ignore]
+#[tokio::test]
+async fn test_get_blockhash_ws() {
+    assert_eq!(
+        blockbook_ws()
+            .await
+            .get_blockhash(Height::from_consensus(500_044).unwrap())
+            .await
+            .unwrap()
+            .to_string(),
+        "0000000000000000001f9ba01120351182680ceba085ffabeaa532cda35f2cc7"
+    );
+}
+
 fn addr_1() -> Address {
     "bc1qsej2fzpejkar82t8nyc2dhkvk54kn905vpvzpw"
         .parse()
