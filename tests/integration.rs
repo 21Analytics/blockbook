@@ -183,7 +183,7 @@ async fn test_tx() {
             txid: "a6e40e5abfe0114fcc9cc7d3ca6e8b4709e3e89782efdd4b0efade7f5815fa27"
                 .parse()
                 .unwrap(),
-            sequence: Sequence(4_294_967_295),
+            sequence: Some(Sequence(4_294_967_295)),
             n: 0,
             vout: Some(2),
             addresses: vec!["bc1qxxkqkdljm7s2xnr9u47zpymp4yt0ad3df4hudm"
@@ -197,7 +197,7 @@ async fn test_tx() {
                 .parse()
                 .unwrap(),
             vout: None,
-            sequence: Sequence(4_294_967_295),
+            sequence: Some(Sequence(4_294_967_295)),
             n: 1,
             addresses: vec!["bc1qxxkqkdljm7s2xnr9u47zpymp4yt0ad3df4hudm"
                 .parse::<blockbook::Address>()
@@ -250,6 +250,25 @@ async fn test_lock_time() {
         .await
         .unwrap();
     assert_eq!(tx.lock_time, Some(Height::from_consensus(777_536).unwrap()));
+}
+
+#[tokio::test]
+async fn test_sequence() {
+    let tx = blockbook()
+        .await
+        .transaction("bd99f123432e23aa8b88af0e9f701a4d6c8f0638dc133a14c7ccf57fb06596ac")
+        .await
+        .unwrap();
+    assert_eq!(
+        tx.vin.get(0).unwrap().sequence,
+        Some(Sequence(4_294_967_293))
+    );
+    let tx = blockbook()
+        .await
+        .transaction("c8d7b00135b9bd03055a8f47851eafae747b759b4608bd9f35e85b3285185679")
+        .await
+        .unwrap();
+    assert_eq!(tx.vin.get(0).unwrap().sequence, None);
 }
 
 #[tokio::test]

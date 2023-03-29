@@ -464,7 +464,7 @@ pub struct Transaction {
 pub struct Vin {
     pub txid: Txid,
     pub vout: Option<u16>,
-    pub sequence: Sequence,
+    pub sequence: Option<Sequence>,
     pub n: u16,
     pub addresses: Vec<Address>,
     pub is_address: bool,
