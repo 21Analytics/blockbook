@@ -132,7 +132,9 @@ pub struct Client {
 
 impl Drop for Client {
     fn drop(&mut self) {
-        self.shutdown.take().unwrap().send(()).unwrap();
+        if self.shutdown.take().unwrap().send(()).is_err() {
+            tracing::info!("processing queue already exited");
+        }
     }
 }
 
