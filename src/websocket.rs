@@ -168,6 +168,8 @@ impl Client {
             futures::channel::mpsc::Sender<Result<Response>>,
         >::new();
         let mut ping_interval = tokio::time::interval(std::time::Duration::from_secs(10));
+        // skip first immediate tick
+        ping_interval.tick().await;
         loop {
             tokio::select! {
                 _ = &mut shutdown => return,
