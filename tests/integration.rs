@@ -49,7 +49,7 @@ impl Drop for QueuedBlockbook {
 }
 
 fn blockbooks() -> impl Iterator<Item = blockbook::Blockbook> {
-    (1..6).filter(|&i| i != 4).map(|i| {
+    [1, 3, 5].into_iter().map(|i| {
         blockbook::Blockbook::new(url::Url::parse(&format!("https://btc{i}.trezor.io")).unwrap())
     })
 }
@@ -96,8 +96,8 @@ impl Drop for QueuedBlockbookWs {
 async fn blockbooks_ws(
 ) -> std::sync::Arc<std::sync::Mutex<std::collections::VecDeque<QueuedBlockbookWs>>> {
     std::sync::Arc::new(std::sync::Mutex::new(
-        (1..6)
-            .filter(|&i| i != 4)
+        [1, 3, 5]
+            .into_iter()
             .map(|i| {
                 Client::new(url::Url::parse(&format!("wss://btc{i}.trezor.io/websocket")).unwrap())
             })
