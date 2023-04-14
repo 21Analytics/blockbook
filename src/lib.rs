@@ -328,6 +328,135 @@ impl Blockbook {
             .await?
             .result)
     }
+
+    // https://github.com/trezor/blockbook/blob/211aeff22d6f9ce59b26895883aa85905bba566b/docs/api.md#get-xpub
+    pub async fn xpub_info_basic(
+        &self,
+        xpub: &str,
+        include_token_list: bool,
+        address_filter: Option<&AddressFilter>,
+        also_in: Option<&Currency>,
+    ) -> Result<XPubInfoBasic> {
+        let mut query_pairs = url::form_urlencoded::Serializer::new(String::new());
+        query_pairs.append_pair(
+            "details",
+            if include_token_list {
+                "tokenBalances"
+            } else {
+                "basic"
+            },
+        );
+        if let Some(address_property) = address_filter {
+            query_pairs.append_pair("tokens", address_property.as_str());
+        }
+        if let Some(currency) = also_in {
+            query_pairs.append_pair("secondary", &format!("{currency:?}"));
+        }
+        self.query::<XPubInfoBasic>(format!("/api/v2/xpub/{xpub}?{}", query_pairs.finish()))
+            .await
+    }
+
+    // https://github.com/trezor/blockbook/blob/211aeff22d6f9ce59b26895883aa85905bba566b/docs/api.md#get-xpub
+    #[allow(clippy::too_many_arguments)]
+    pub async fn xpub_info(
+        &self,
+        xpub: &str,
+        page: Option<&std::num::NonZeroU32>,
+        pagesize: Option<&std::num::NonZeroU16>,
+        from: Option<&Height>,
+        to: Option<&Height>,
+        entire_txs: bool,
+        address_filter: Option<&AddressFilter>,
+        also_in: Option<&Currency>,
+    ) -> Result<XPubInfo> {
+        let mut query_pairs = url::form_urlencoded::Serializer::new(String::new());
+        if let Some(p) = page {
+            query_pairs.append_pair("page", &p.to_string());
+        }
+        if let Some(ps) = pagesize {
+            query_pairs.append_pair("pageSize", &ps.to_string());
+        }
+        if let Some(start_block) = from {
+            query_pairs.append_pair("from", &start_block.to_string());
+        }
+        if let Some(end_block) = to {
+            query_pairs.append_pair("to", &end_block.to_string());
+        }
+        query_pairs.append_pair("details", if entire_txs { "txs" } else { "txids" });
+        if let Some(address_property) = address_filter {
+            query_pairs.append_pair("tokens", address_property.as_str());
+        }
+        if let Some(currency) = also_in {
+            query_pairs.append_pair("secondary", &format!("{currency:?}"));
+        }
+        self.query::<XPubInfo>(format!("/api/v2/xpub/{xpub}?{}", query_pairs.finish()))
+            .await
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(feature = "test", serde(deny_unknown_fields))]
+pub struct XPubInfoBasic {
+    pub address: String,
+    #[serde(with = "amount")]
+    pub balance: Amount,
+    #[serde(with = "amount")]
+    pub total_received: Amount,
+    #[serde(with = "amount")]
+    pub total_sent: Amount,
+    #[serde(with = "amount")]
+    pub unconfirmed_balance: Amount,
+    pub unconfirmed_txs: u32,
+    pub txs: u32,
+    pub used_tokens: u32,
+    pub secondary_value: Option<f64>,
+    pub tokens: Option<Vec<Token>>,
+}
+
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Token {
+    pub r#type: String,
+    #[serde(rename = "name")]
+    pub address: Address,
+    pub path: DerivationPath,
+    pub transfers: u32,
+    pub decimals: u8,
+    #[serde(with = "amount")]
+    pub balance: Amount,
+    #[serde(with = "amount")]
+    pub total_received: Amount,
+    #[serde(with = "amount")]
+    pub total_sent: Amount,
+}
+
+#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(feature = "test", serde(deny_unknown_fields))]
+pub struct XPubInfo {
+    #[serde(flatten)]
+    pub paging: AddressInfoPaging,
+    #[serde(flatten)]
+    pub basic: XPubInfoBasic,
+    pub txids: Option<Vec<Txid>>,
+    pub transactions: Option<Vec<Transaction>>,
+}
+
+pub enum AddressFilter {
+    NonZero,
+    Used,
+    Derived,
+}
+
+impl AddressFilter {
+    fn as_str(&self) -> &'static str {
+        match self {
+            AddressFilter::NonZero => "nonzero",
+            AddressFilter::Used => "used",
+            AddressFilter::Derived => "derived",
+        }
+    }
 }
 
 pub enum TxDetail {

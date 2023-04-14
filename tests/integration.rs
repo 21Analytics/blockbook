@@ -1,11 +1,11 @@
 use blockbook::{
     hashes::{self, hex::FromHex},
     websocket::{Backend, Client, Info},
-    Address, AddressBlockVout, AddressInfo, AddressInfoBasic, AddressInfoDetailed,
+    Address, AddressBlockVout, AddressFilter, AddressInfo, AddressInfoBasic, AddressInfoDetailed,
     AddressInfoPaging, Amount, Asset, Block, BlockHash, BlockTransaction, BlockVin, BlockVout,
     Chain, Currency, Height, OpReturn, PackedLockTime, ScriptPubKey, ScriptPubKeyType, ScriptSig,
-    Sequence, Ticker, TickersList, Time, Transaction, TransactionSpecific, Tx, TxDetail, Txid,
-    Utxo, Vin, VinSpecific, Vout, VoutSpecific, Witness,
+    Sequence, Ticker, TickersList, Time, Token, Transaction, TransactionSpecific, Tx, TxDetail,
+    Txid, Utxo, Vin, VinSpecific, Vout, VoutSpecific, Witness, XPubInfo, XPubInfoBasic,
 };
 use std::str::FromStr;
 
@@ -1420,16 +1420,14 @@ async fn test_utxos_from_address() {
     assert_eq!(utxos.last().unwrap(), &last_utxo);
 }
 
+fn xpub() -> &'static str {
+    "zpub6qd36EtRVbyDyJToANn1vnuvhGenvepKnjeUzBXDk7JE4JYBxGUAPbjh22QqZ7JkRGuAtpgBfgKP1iT9GzgQxP1TgKPEBoN3e3vN3WtY2Su"
+}
+
 #[ignore]
 #[tokio::test]
 async fn test_utxos_from_xpub() {
-    let utxos = blockbook()
-        .utxos_from_xpub(
-            "zpub6qd36EtRVbyDyJToANn1vnuvhGenvepKnjeUzBXDk7JE4JYBxGUAPbjh22QqZ7JkRGuAtpgBfgKP1iT9GzgQxP1TgKPEBoN3e3vN3WtY2Su",
-            true,
-        )
-        .await
-        .unwrap();
+    let utxos = blockbook().utxos_from_xpub(xpub(), true).await.unwrap();
     let expected_utxo = Utxo {
         txid: "d60691ecdf678eb3f88ebfaf315d3907d0be62ccd40fd1f027938249966f268d"
             .parse()
@@ -1444,4 +1442,276 @@ async fn test_utxos_from_xpub() {
         coinbase: None,
     };
     assert_eq!(utxos.get(0).unwrap(), &expected_utxo);
+}
+
+#[ignore]
+#[tokio::test]
+async fn test_xpub_info_basic_no_tokens() {
+    let xpub_info = blockbook()
+        .xpub_info_basic(xpub(), false, None, Some(&Currency::Btc))
+        .await
+        .unwrap();
+    let expected_xpub_info = XPubInfoBasic {
+        address: xpub().to_string(),
+        balance: Amount::from_sat(821),
+        total_received: Amount::from_sat(821),
+        total_sent: Amount::from_sat(0),
+        unconfirmed_balance: Amount::from_sat(0),
+        unconfirmed_txs: 0,
+        txs: 1,
+        secondary_value: Some(821f64 / 10f64.powf(8.0)),
+        used_tokens: 1,
+        tokens: None,
+    };
+    assert_eq!(xpub_info, expected_xpub_info);
+}
+
+fn token() -> Token {
+    Token {
+        r#type: "XPUBAddress".to_string(),
+        address: "bc1q5au2nmza9pmplnvgzyd4ky7egu2wya56qa024u"
+            .parse()
+            .unwrap(),
+        path: "m/84'/0'/0'/0/0".parse().unwrap(),
+        transfers: 1,
+        decimals: 8,
+        balance: Amount::from_sat(821),
+        total_received: Amount::from_sat(821),
+        total_sent: Amount::from_sat(0),
+    }
+}
+
+#[ignore]
+#[tokio::test]
+async fn test_xpub_info_txids() {
+    let xpub_info = blockbook()
+        .xpub_info(xpub(), None, None, None, None, false, None, None)
+        .await
+        .unwrap();
+    let expected_xpub_info = XPubInfo {
+        paging: AddressInfoPaging {
+            page: 1,
+            total_pages: Some(1),
+            items_on_page: 1000,
+        },
+        basic: XPubInfoBasic {
+            address: xpub().to_string(),
+            balance: Amount::from_sat(821),
+            total_received: Amount::from_sat(821),
+            total_sent: Amount::from_sat(0),
+            unconfirmed_balance: Amount::from_sat(0),
+            unconfirmed_txs: 0,
+            txs: 1,
+            secondary_value: None,
+            used_tokens: 1,
+            tokens: Some(vec![token()]),
+        },
+        txids: Some(vec![
+            "d60691ecdf678eb3f88ebfaf315d3907d0be62ccd40fd1f027938249966f268d"
+                .parse()
+                .unwrap(),
+        ]),
+        transactions: None,
+    };
+    assert_eq!(xpub_info, expected_xpub_info);
+}
+
+#[ignore]
+#[tokio::test]
+async fn test_xpub_info_specific() {
+    let xpub_info = blockbook()
+        .xpub_info(
+            xpub(),
+            Some(&std::num::NonZeroU32::new(1).unwrap()),
+            Some(&std::num::NonZeroU16::new(1).unwrap()),
+            Some(&Height::from_consensus(784_026).unwrap()),
+            Some(&Height::from_consensus(784_028).unwrap()),
+            false,
+            Some(&AddressFilter::Used),
+            Some(&Currency::Btc),
+        )
+        .await
+        .unwrap();
+    let expected_xpub_info = XPubInfo {
+        paging: AddressInfoPaging {
+            page: 1,
+            total_pages: None,
+            items_on_page: 1,
+        },
+        basic: XPubInfoBasic {
+            address: xpub().to_string(),
+            balance: Amount::from_sat(821),
+            total_received: Amount::from_sat(821),
+            total_sent: Amount::from_sat(0),
+            unconfirmed_balance: Amount::from_sat(0),
+            unconfirmed_txs: 0,
+            txs: 1,
+            secondary_value: Some(0.000_008_21),
+            used_tokens: 1,
+            tokens: Some(vec![token()]),
+        },
+        txids: Some(vec![
+            "d60691ecdf678eb3f88ebfaf315d3907d0be62ccd40fd1f027938249966f268d"
+                .parse()
+                .unwrap(),
+        ]),
+        transactions: None,
+    };
+    assert_eq!(xpub_info, expected_xpub_info);
+}
+
+#[ignore]
+#[tokio::test]
+async fn test_xpub_info_empty() {
+    let xpub_info = blockbook()
+        .xpub_info(
+            xpub(),
+            None,
+            None,
+            Some(&Height::from_consensus(784_000).unwrap()),
+            Some(&Height::from_consensus(784_002).unwrap()),
+            false,
+            None,
+            None,
+        )
+        .await
+        .unwrap();
+    let expected_xpub_info = XPubInfo {
+        paging: AddressInfoPaging {
+            page: 1,
+            total_pages: Some(1),
+            items_on_page: 1000,
+        },
+        basic: XPubInfoBasic {
+            address: xpub().to_string(),
+            balance: Amount::from_sat(821),
+            total_received: Amount::from_sat(821),
+            total_sent: Amount::from_sat(0),
+            unconfirmed_balance: Amount::from_sat(0),
+            unconfirmed_txs: 0,
+            txs: 1,
+            secondary_value: None,
+            used_tokens: 1,
+            tokens: Some(vec![token()]),
+        },
+        txids: None,
+        transactions: None,
+    };
+    assert_eq!(xpub_info, expected_xpub_info);
+}
+
+#[allow(clippy::too_many_lines)]
+#[ignore]
+#[tokio::test]
+async fn test_xpub_info_entire_txs() {
+    let xpub_info = blockbook()
+        .xpub_info(xpub(), None, None, None, None, true, None, None)
+        .await
+        .unwrap();
+    let expected_xpub_info = XPubInfo {
+        paging: AddressInfoPaging {
+            page: 1,
+            total_pages: Some(1),
+            items_on_page: 1000,
+        },
+        basic: XPubInfoBasic {
+            address: xpub().to_string(),
+            balance: Amount::from_sat(821),
+            total_received: Amount::from_sat(821),
+            total_sent: Amount::from_sat(0),
+            unconfirmed_balance: Amount::from_sat(0),
+            unconfirmed_txs: 0,
+            txs: 1,
+            secondary_value: None,
+            used_tokens: 1,
+            tokens: Some(vec![token()]),
+        },
+        txids: None,
+        transactions: Some(vec![Transaction {
+            txid: "d60691ecdf678eb3f88ebfaf315d3907d0be62ccd40fd1f027938249966f268d"
+                .parse()
+                .unwrap(),
+            version: 2,
+            lock_time: Some(Height::from_consensus(784_026).unwrap()),
+            vin: vec![Vin {
+                txid: "6c646dc364b600afcfc16ae44ee910cfee11a176a0d015cf423e453e3b3e9e16"
+                    .parse()
+                    .unwrap(),
+                vout: Some(24),
+                sequence: Some(Sequence(4_294_967_293)),
+                n: 0,
+                addresses: vec!["3AVvCje8AHCXrvgL8ZNsqUFdiu4LxmdNJk".parse().unwrap()],
+                is_address: true,
+                value: Amount::from_sat(137_000),
+            }],
+            vout: vec![
+                Vout {
+                    value: Amount::from_sat(135_146),
+                    n: 0,
+                    script: "a9143d46e616b172612000e823699338a5b0a9e6c6f387"
+                        .parse()
+                        .unwrap(),
+                    addresses: vec!["37H25Nx78ueHFhwr2KWGVcVu1155WLtb92".parse().unwrap()],
+                    is_address: true,
+                    spent: Some(true),
+                },
+                Vout {
+                    value: Amount::from_sat(821),
+                    n: 1,
+                    script: "0014a778a9ec5d28761fcd88111b5b13d94714e2769a"
+                        .parse()
+                        .unwrap(),
+                    addresses: vec!["bc1q5au2nmza9pmplnvgzyd4ky7egu2wya56qa024u"
+                        .parse()
+                        .unwrap()],
+                    is_address: true,
+                    spent: None,
+                },
+            ],
+            block_hash: Some("0000000000000000000036fe411dd9dd3ef7ce4531d65314e9ab73637dab3f68"
+                .parse()
+                .unwrap()),
+            block_height: Some(Height::from_consensus(784_027).unwrap()),
+            confirmations: xpub_info
+                .transactions
+                .as_ref()
+                .unwrap()
+                .get(0)
+                .unwrap()
+                .confirmations,
+            block_time: "1680680375".parse().unwrap(),
+            size: 375,
+            vsize: 206,
+            value: Amount::from_sat(135_967),
+            value_in: Amount::from_sat(137_000),
+            fees: Amount::from_sat(1_033),
+            script:
+                "02000000000101169e3e3b3e453e42cf15d0a076a111eecf10e94ee46ac1cfaf00b664c36d646c18000000232200206e0d706cbd560f4c9845604991ce15a47dea5e854f9b56ae11decf6d98a7a821fdffffff02ea0f02000000000017a9143d46e616b172612000e823699338a5b0a9e6c6f3873503000000000000160014a778a9ec5d28761fcd88111b5b13d94714e2769a03473044022018286becb369315af56ea7ab496588ace0e34e17b9c27b6ea06c65f794f07a4202202617528bfffcb75083700a86ee40551c25c8f62717ac962ce4733d033729abda014730440220276366c3cc6b1947d7be49ceb54c5ba6511ad74596119b7beeaf8b0bb21c267f02201a6e96d8735e08db6155b49e0ef4c9344c8f663a3dda3f795c718e43d7210294014e2102fab4f766e50937a07b96b045d12e210a28ca43570e9d46f8a6f6b3c385d5e7c7ad2102eef58d1fe659a43ef061b3646d51719f1005de7b74967786e75c5c6fb4e739a9ac73640380ca00b2689af60b00"
+                    .parse()
+                    .unwrap(),
+        }]),
+    };
+    assert_eq!(xpub_info, expected_xpub_info);
+}
+
+#[ignore]
+#[tokio::test]
+async fn test_xpub_info_basic_tokens() {
+    let xpub_info = blockbook()
+        .xpub_info_basic(xpub(), true, None, None)
+        .await
+        .unwrap();
+    let expected_xpub_info = XPubInfoBasic {
+        address: xpub().to_string(),
+        balance: Amount::from_sat(821),
+        total_received: Amount::from_sat(821),
+        total_sent: Amount::from_sat(0),
+        unconfirmed_balance: Amount::from_sat(0),
+        unconfirmed_txs: 0,
+        txs: 1,
+        secondary_value: None,
+        used_tokens: 1,
+        tokens: Some(vec![token()]),
+    };
+    assert_eq!(xpub_info, expected_xpub_info);
 }
