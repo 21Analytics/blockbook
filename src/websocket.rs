@@ -2,7 +2,6 @@ pub use serde_json::Error as SerdeJsonError;
 pub use tokio_tungstenite::tungstenite::Error as TungsteniteError;
 
 use futures::{SinkExt, StreamExt};
-use tokio_tungstenite::tungstenite::client::IntoClientRequest;
 
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
@@ -140,11 +139,7 @@ impl Drop for Client {
 
 impl Client {
     pub async fn new(url: url::Url) -> Result<Self> {
-        let mut request = url.into_client_request()?;
-        request
-            .headers_mut()
-            .insert("User-Agent", super::AGENT.parse().unwrap());
-        let stream = tokio_tungstenite::connect_async(request).await?;
+        let stream = tokio_tungstenite::connect_async(url).await?;
         let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
         let (job_tx, job_rx) = futures::channel::mpsc::channel(10);
         tokio::spawn(Self::process(stream.0, job_rx, shutdown_rx));

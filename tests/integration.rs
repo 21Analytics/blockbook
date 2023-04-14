@@ -7,133 +7,33 @@ use blockbook::{
     Sequence, Ticker, TickersList, Time, Transaction, TransactionSpecific, Tx, TxDetail, Txid,
     Utxo, Vin, VinSpecific, Vout, VoutSpecific, Witness,
 };
-use futures::StreamExt;
 use std::str::FromStr;
 
-static QUEUED_BLOCKBOOKS: once_cell::sync::Lazy<
-    std::sync::Arc<std::sync::Mutex<std::collections::VecDeque<QueuedBlockbook>>>,
-> = once_cell::sync::Lazy::new(|| {
-    std::sync::Arc::new(std::sync::Mutex::new(
-        blockbooks()
-            .map(|blockbook| QueuedBlockbook {
-                blockbook: blockbook.into(),
-                timeout: std::time::Duration::ZERO,
-            })
-            .collect(),
-    ))
-});
-
-struct QueuedBlockbook {
-    blockbook: std::sync::Arc<blockbook::Blockbook>,
-    timeout: std::time::Duration,
+fn blockbook() -> blockbook::Blockbook {
+    blockbook::Blockbook::new(
+        format!("https://{}", std::env::var("BLOCKBOOK_SERVER").unwrap())
+            .parse()
+            .unwrap(),
+    )
 }
 
-impl std::ops::Deref for QueuedBlockbook {
-    type Target = blockbook::Blockbook;
-
-    fn deref(&self) -> &Self::Target {
-        &self.blockbook
-    }
+async fn blockbook_ws() -> Client {
+    Client::new(
+        format!(
+            "wss://{}/websocket",
+            std::env::var("BLOCKBOOK_SERVER").unwrap()
+        )
+        .parse()
+        .unwrap(),
+    )
+    .await
+    .unwrap()
 }
 
-impl Drop for QueuedBlockbook {
-    fn drop(&mut self) {
-        QUEUED_BLOCKBOOKS
-            .lock()
-            .unwrap()
-            .push_back(QueuedBlockbook {
-                blockbook: self.blockbook.clone(),
-                timeout: std::time::Duration::from_millis(500),
-            });
-    }
-}
-
-fn blockbooks() -> impl Iterator<Item = blockbook::Blockbook> {
-    [1, 3, 5].into_iter().map(|i| {
-        blockbook::Blockbook::new(url::Url::parse(&format!("https://btc{i}.trezor.io")).unwrap())
-    })
-}
-
-async fn blockbook() -> QueuedBlockbook {
-    loop {
-        if let Some(queued_blockbook) = {
-            let blockbook = QUEUED_BLOCKBOOKS.lock().unwrap().pop_front();
-            blockbook
-        } {
-            tokio::time::sleep(queued_blockbook.timeout).await;
-            return queued_blockbook;
-        }
-        tokio::task::yield_now().await;
-    }
-}
-
-static QUEUED_BLOCKBOOKS_WS: tokio::sync::OnceCell<
-    std::sync::Arc<std::sync::Mutex<std::collections::VecDeque<QueuedBlockbookWs>>>,
-> = tokio::sync::OnceCell::const_new();
-
-struct QueuedBlockbookWs {
-    blockbook: std::sync::Arc<tokio::sync::Mutex<Client>>,
-    timeout: std::time::Duration,
-}
-
-impl Drop for QueuedBlockbookWs {
-    fn drop(&mut self) {
-        let blockbook = self.blockbook.clone();
-        tokio::spawn(async move {
-            QUEUED_BLOCKBOOKS_WS
-                .get_or_init(blockbooks_ws)
-                .await
-                .lock()
-                .unwrap()
-                .push_back(QueuedBlockbookWs {
-                    blockbook,
-                    timeout: std::time::Duration::from_millis(500),
-                });
-        });
-    }
-}
-
-async fn blockbooks_ws(
-) -> std::sync::Arc<std::sync::Mutex<std::collections::VecDeque<QueuedBlockbookWs>>> {
-    std::sync::Arc::new(std::sync::Mutex::new(
-        [1, 3, 5]
-            .into_iter()
-            .map(|i| {
-                Client::new(url::Url::parse(&format!("wss://btc{i}.trezor.io/websocket")).unwrap())
-            })
-            .collect::<futures::stream::FuturesUnordered<_>>()
-            .collect::<Vec<_>>()
-            .await
-            .into_iter()
-            .map(|blockbook| QueuedBlockbookWs {
-                blockbook: std::sync::Arc::new(tokio::sync::Mutex::new(blockbook.unwrap())),
-                timeout: std::time::Duration::ZERO,
-            })
-            .collect(),
-    ))
-}
-
-async fn blockbook_ws() -> QueuedBlockbookWs {
-    loop {
-        if let Some(queued_blockbook) = {
-            let blockbook = QUEUED_BLOCKBOOKS_WS
-                .get_or_init(blockbooks_ws)
-                .await
-                .lock()
-                .unwrap()
-                .pop_front();
-            blockbook
-        } {
-            tokio::time::sleep(queued_blockbook.timeout).await;
-            return queued_blockbook;
-        }
-        tokio::task::yield_now().await;
-    }
-}
-
+#[ignore]
 #[tokio::test]
 async fn test_status() {
-    let status = blockbook().await.status().await.unwrap();
+    let status = blockbook().status().await.unwrap();
 
     assert_eq!(status.blockbook.coin, Asset::Bitcoin);
     assert_eq!(status.blockbook.decimals, 8);
@@ -145,9 +45,10 @@ async fn test_status() {
     assert_eq!(status.backend.protocol_version, "70016");
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_block_hash() {
-    let hash = blockbook().await.block_hash(763_672).await.unwrap();
+    let hash = blockbook().block_hash(763_672).await.unwrap();
     assert_eq!(
         hash.as_ref(),
         [
@@ -158,10 +59,11 @@ async fn test_block_hash() {
     );
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_tx() {
     let txid = "b0714235addd08daf83b979aa35cc9ed7558efb8327b86b4d3ccacd8b0482ae1";
-    let tx = blockbook().await.transaction(txid).await.unwrap();
+    let tx = blockbook().transaction(txid).await.unwrap();
     let expected_tx = Transaction {
         txid: txid.parse().unwrap(),
         version: 2,
@@ -253,20 +155,20 @@ async fn test_tx() {
     assert_eq!(tx, expected_tx);
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_lock_time() {
     let tx = blockbook()
-        .await
         .transaction("bd99f123432e23aa8b88af0e9f701a4d6c8f0638dc133a14c7ccf57fb06596ac")
         .await
         .unwrap();
     assert_eq!(tx.lock_time, Some(Height::from_consensus(777_536).unwrap()));
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_sequence() {
     let tx = blockbook()
-        .await
         .transaction("bd99f123432e23aa8b88af0e9f701a4d6c8f0638dc133a14c7ccf57fb06596ac")
         .await
         .unwrap();
@@ -275,7 +177,6 @@ async fn test_sequence() {
         Some(Sequence(4_294_967_293))
     );
     let tx = blockbook()
-        .await
         .transaction("c8d7b00135b9bd03055a8f47851eafae747b759b4608bd9f35e85b3285185679")
         .await
         .unwrap();
@@ -283,10 +184,11 @@ async fn test_sequence() {
 }
 
 #[allow(clippy::too_many_lines)]
+#[ignore]
 #[tokio::test]
 async fn test_tx_specific() {
     let txid = "b0714235addd08daf83b979aa35cc9ed7558efb8327b86b4d3ccacd8b0482ae1";
-    let tx = blockbook().await.transaction_specific(txid).await.unwrap();
+    let tx = blockbook().transaction_specific(txid).await.unwrap();
     let expected_tx = TransactionSpecific {
         txid: txid.parse().unwrap(),
         version: 2,
@@ -395,10 +297,11 @@ async fn test_tx_specific() {
     assert_eq!(tx, expected_tx);
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_tx_specific_pre_segwit() {
     let txid = "0c5cb51f39ecb826cd477d94576abde1d2b6ef1b2e0ac7b9cea5d5ab28aba902";
-    let tx = blockbook().await.transaction_specific(txid).await.unwrap();
+    let tx = blockbook().transaction_specific(txid).await.unwrap();
     let expected_tx = TransactionSpecific {
         txid: txid.parse().unwrap(),
         version: 1,
@@ -452,10 +355,10 @@ async fn test_tx_specific_pre_segwit() {
 }
 
 #[allow(clippy::too_many_lines)]
+#[ignore]
 #[tokio::test]
 async fn test_block_by_hash() {
     let block = blockbook()
-        .await
         .block_by_hash(
             "000000000003ba27aa200b1cecaad478d2b00432346c3f1f3986da1afd33e506"
                 .parse()
@@ -636,10 +539,10 @@ async fn test_block_by_hash() {
     assert_eq!(block, expected_block);
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_block_by_height_with_opreturn_output() {
     let block = blockbook()
-        .await
         .block_by_height(Height::from_consensus(500_044).unwrap())
         .await
         .unwrap();
@@ -716,10 +619,10 @@ async fn test_block_by_height_with_opreturn_output() {
     assert_eq!(block, expected_block);
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_tickers_list() {
     let tickers_list = blockbook()
-        .await
         .tickers_list(Time::from_consensus(1_674_821_349).unwrap())
         .await
         .unwrap();
@@ -778,10 +681,10 @@ async fn test_tickers_list() {
     assert_eq!(tickers_list, expected_tickers_list);
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_current_tickers_list() {
     blockbook()
-        .await
         .tickers_list(
             Time::from_consensus(
                 std::time::SystemTime::now()
@@ -797,10 +700,10 @@ async fn test_current_tickers_list() {
         .unwrap();
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_tickers() {
     let tickers = blockbook()
-        .await
         .tickers(Some(Time::from_consensus(1_674_821_349).unwrap()))
         .await
         .unwrap();
@@ -859,15 +762,16 @@ async fn test_tickers() {
     assert_eq!(tickers, expected_tickers);
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_current_tickers() {
-    blockbook().await.tickers(None).await.unwrap();
+    blockbook().tickers(None).await.unwrap();
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_ticker() {
     let ticker = blockbook()
-        .await
         .ticker(
             Currency::Idr,
             Some(Time::from_consensus(1_674_692_106).unwrap()),
@@ -881,10 +785,10 @@ async fn test_ticker() {
     assert_eq!(ticker, expected_ticker);
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_get_info_ws() {
-    let client = blockbook_ws().await;
-    let info = client.blockbook.lock().await.get_info().await.unwrap();
+    let info = blockbook_ws().await.get_info().await.unwrap();
     let expected_info = Info {
         name: "Bitcoin".into(),
         shortcut: "BTC".into(),
@@ -910,9 +814,10 @@ fn addr_1() -> Address {
         .unwrap()
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_address_info() {
-    let address_info = blockbook().await.address_info(&addr_1()).await.unwrap();
+    let address_info = blockbook().address_info(&addr_1()).await.unwrap();
     assert_eq!(&address_info.basic.address, &addr_1());
     assert_eq!(
         address_info.txids.last().unwrap(),
@@ -921,10 +826,10 @@ async fn test_address_info() {
     );
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_address_info_specific_no_args() {
     let address_info = blockbook()
-        .await
         .address_info_specific(&addr_1(), None, None, None, None, None)
         .await
         .unwrap();
@@ -936,17 +841,16 @@ async fn test_address_info_specific_no_args() {
     );
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_address_info_specific_page() {
     let address: Address = "1CounterpartyXXXXXXXXXXXXXXXUWLpVr".parse().unwrap();
     let number_of_txs = blockbook()
-        .await
         .address_info_specific_basic(&address, None, None, None, None, None)
         .await
         .unwrap()
         .txs;
     let address_info = blockbook()
-        .await
         .address_info_specific(
             &address,
             Some(&std::num::NonZeroU32::new(number_of_txs).unwrap()),
@@ -969,10 +873,10 @@ fn addr_2() -> Address {
     "3Kzh9qAqVWQhEsfQz7zEQL1EuSx5tyNLNS".parse().unwrap()
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_address_info_specific_blocks_basic() {
     let address_info = blockbook()
-        .await
         .address_info_specific_basic(
             &addr_2(),
             None,
@@ -986,10 +890,10 @@ async fn test_address_info_specific_blocks_basic() {
     assert_eq!(&address_info.address, &addr_2());
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_address_info_specific_blocks() {
     let address_info = blockbook()
-        .await
         .address_info_specific(
             &addr_2(),
             None,
@@ -1037,10 +941,10 @@ async fn test_address_info_specific_blocks() {
     assert_eq!(address_info, expected_address_info);
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_address_info_specific_blocks_details() {
     let address_info = blockbook()
-        .await
         .address_info_specific_detailed(
             &addr_2(),
             None,
@@ -1128,10 +1032,10 @@ async fn test_address_info_specific_blocks_details() {
     assert_eq!(&address_info, &expected_address_info);
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_address_info_specific_blocks_details_light() {
     let address_info = blockbook()
-        .await
         .address_info_specific_detailed(
             &addr_2(),
             None,
@@ -1205,10 +1109,10 @@ async fn test_address_info_specific_blocks_details_light() {
     assert_eq!(&address_info, &expected_address_info);
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_address_info_correct_variant_full() {
     let address_info_full = blockbook()
-        .await
         .address_info_specific_detailed(
             &"bc1qhjhn2gm6mv4k99942ud4spe54483drh330faax"
                 .parse()
@@ -1228,10 +1132,10 @@ async fn test_address_info_correct_variant_full() {
     ));
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_address_info_correct_variant_light() {
     let address_info_light = blockbook()
-        .await
         .address_info_specific_detailed(
             &"bc1qhjhn2gm6mv4k99942ud4spe54483drh330faax"
                 .parse()
@@ -1251,10 +1155,10 @@ async fn test_address_info_correct_variant_light() {
     ));
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_utxos_from_address() {
     let utxos = blockbook()
-        .await
         .utxos_from_address("1CounterpartyXXXXXXXXXXXXXXXUWLpVr".parse().unwrap(), false)
         .await
         .unwrap();
@@ -1274,10 +1178,10 @@ async fn test_utxos_from_address() {
     assert_eq!(utxos.last().unwrap(), &last_utxo);
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_utxos_from_xpub() {
     let utxos = blockbook()
-        .await
         .utxos_from_xpub(
             "zpub6qd36EtRVbyDyJToANn1vnuvhGenvepKnjeUzBXDk7JE4JYBxGUAPbjh22QqZ7JkRGuAtpgBfgKP1iT9GzgQxP1TgKPEBoN3e3vN3WtY2Su",
             true,

@@ -12,8 +12,6 @@ pub use bitcoin::Sequence;
 pub use reqwest::Error as ReqwestError;
 pub use url::ParseError;
 
-const AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64; rv:107.0) Gecko/20100101 Firefox/107.0";
-
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     RequestError(reqwest::Error),
@@ -57,7 +55,6 @@ impl Blockbook {
         );
         let client = reqwest::Client::builder()
             .default_headers(headers)
-            .user_agent(AGENT)
             .timeout(std::time::Duration::from_secs(10))
             .build()
             .unwrap();
