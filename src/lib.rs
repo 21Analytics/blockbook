@@ -296,11 +296,23 @@ impl TxDetail {
     }
 }
 
+fn to_u32_option<'de, D>(deserializer: D) -> std::result::Result<Option<u32>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let value: i32 = serde::Deserialize::deserialize(deserializer)?;
+    Ok(u32::try_from(value).ok())
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AddressInfoPaging {
     pub page: u32,
-    pub total_pages: u32,
+    /// The `total_pages` is unknown and hence set to `None` when
+    /// a block height filter is set and the number of transactions
+    /// is higher than the `pagesize` (default: 1000).
+    #[serde(deserialize_with = "to_u32_option")]
+    pub total_pages: Option<u32>,
     pub items_on_page: u32,
 }
 

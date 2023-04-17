@@ -1270,6 +1270,34 @@ async fn test_address_info_correct_variant_light() {
     ));
 }
 
+fn xpub_addr() -> Address {
+    "bc1q5au2nmza9pmplnvgzyd4ky7egu2wya56qa024u"
+        .parse()
+        .unwrap()
+}
+
+#[ignore]
+#[tokio::test]
+async fn test_address_info_block_and_pagesize_filter_combination() {
+    let address_info = blockbook()
+        .address_info_specific(
+            &counterparty_burner_addr(),
+            None,
+            Some(&std::num::NonZeroU16::new(1).unwrap()),
+            Some(&Height::from_consensus(600_000).unwrap()),
+            Some(&Height::from_consensus(700_000).unwrap()),
+            None,
+        )
+        .await
+        .unwrap();
+    assert_eq!(address_info.paging.total_pages, None);
+    let address_info = blockbook()
+        .address_info_specific(&xpub_addr(), None, None, None, None, None)
+        .await
+        .unwrap();
+    assert_eq!(address_info.paging.total_pages, Some(1));
+}
+
 #[ignore]
 #[tokio::test]
 async fn test_utxos_from_address() {
@@ -1312,11 +1340,7 @@ async fn test_utxos_from_xpub() {
         height: Some(Height::from_consensus(784_027).unwrap()),
         confirmations: utxos.get(0).unwrap().confirmations,
         locktime: None,
-        address: Some(
-            "bc1q5au2nmza9pmplnvgzyd4ky7egu2wya56qa024u"
-                .parse()
-                .unwrap(),
-        ),
+        address: Some(xpub_addr()),
         path: Some("m/84'/0'/0'/0/0".parse().unwrap()),
         coinbase: None,
     };
