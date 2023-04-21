@@ -952,10 +952,14 @@ async fn test_address_info_specific_no_args() {
     );
 }
 
+fn counterparty_burner_addr() -> Address {
+    "1CounterpartyXXXXXXXXXXXXXXXUWLpVr".parse().unwrap()
+}
+
 #[ignore]
 #[tokio::test]
 async fn test_address_info_specific_page() {
-    let address: Address = "1CounterpartyXXXXXXXXXXXXXXXUWLpVr".parse().unwrap();
+    let address = counterparty_burner_addr();
     let number_of_txs = blockbook()
         .address_info_specific_basic(&address, None, None, None, None, None)
         .await
@@ -1270,7 +1274,7 @@ async fn test_address_info_correct_variant_light() {
 #[tokio::test]
 async fn test_utxos_from_address() {
     let utxos = blockbook()
-        .utxos_from_address("1CounterpartyXXXXXXXXXXXXXXXUWLpVr".parse().unwrap(), false)
+        .utxos_from_address(counterparty_burner_addr(), false)
         .await
         .unwrap();
     let last_utxo = Utxo {
