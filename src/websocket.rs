@@ -92,6 +92,7 @@ enum StreamingResponse {
 enum OneOffResponse {
     Info(Info),
     BlockHash { hash: super::BlockHash },
+    CurrentFiatRates(FiatRates),
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -304,6 +305,32 @@ impl Client {
         })
     }
 
+    pub async fn get_current_fiat_rates(
+        &mut self,
+        currencies: Vec<super::Currency>,
+    ) -> Result<FiatRates> {
+        #[derive(serde::Serialize)]
+        struct Params {
+            currencies: Vec<super::Currency>,
+        }
+
+        let (tx, mut rx) = futures::channel::mpsc::channel(1);
+        self.jobs
+            .send(Job {
+                method: "getCurrentFiatRates",
+                params: Some(Box::new(Params { currencies })),
+                response_channel: tx,
+            })
+            .await
+            .unwrap();
+        rx.next().await.unwrap().and_then(|resp| {
+            if let Response::OneOff(OneOffResponse::CurrentFiatRates(rates)) = resp {
+                return Ok(rates);
+            }
+            Err(Error::DataObjectMismatch)
+        })
+    }
+
     pub async fn subscribe_blocks(&mut self) -> impl futures::stream::Stream<Item = Result<Block>> {
         let (tx, rx) = futures::channel::mpsc::channel(10);
         self.jobs
@@ -323,4 +350,11 @@ impl Client {
             })
         })
     }
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct FiatRates {
+    #[serde(rename = "ts")]
+    pub timestamp: u32,
+    pub rates: std::collections::HashMap<super::Currency, f64>,
 }

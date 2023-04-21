@@ -822,6 +822,19 @@ async fn test_get_blockhash_ws() {
     );
 }
 
+#[ignore]
+#[tokio::test]
+async fn test_get_current_fiat_rates() {
+    let mut client = blockbook_ws().await;
+    let rates = client
+        .get_current_fiat_rates(vec![Currency::Btc, Currency::Chf])
+        .await
+        .unwrap()
+        .rates;
+    assert!((rates.get(&Currency::Btc).unwrap() - 1.0).abs() < f64::EPSILON);
+    assert!(rates.get(&Currency::Chf).unwrap() > &0.0);
+}
+
 fn addr_1() -> Address {
     "bc1qsej2fzpejkar82t8nyc2dhkvk54kn905vpvzpw"
         .parse()
