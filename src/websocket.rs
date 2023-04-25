@@ -93,6 +93,7 @@ enum OneOffResponse {
     Info(Info),
     BlockHash { hash: super::BlockHash },
     CurrentFiatRates(FiatRates),
+    AvailableCurrencies(super::TickersList),
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -326,6 +327,36 @@ impl Client {
         rx.next().await.unwrap().and_then(|resp| {
             if let Response::OneOff(OneOffResponse::CurrentFiatRates(rates)) = resp {
                 return Ok(rates);
+            }
+            Err(Error::DataObjectMismatch)
+        })
+    }
+
+    /// Uses the provided timestamp and returns the closest available
+    /// timestamp and a list of available currencies at that timestamp.
+    pub async fn get_available_currencies(
+        &mut self,
+        time: super::Time,
+    ) -> Result<super::TickersList> {
+        #[derive(serde::Serialize)]
+        struct Params {
+            time: u32,
+        }
+
+        let (tx, mut rx) = futures::channel::mpsc::channel(1);
+        self.jobs
+            .send(Job {
+                method: "getFiatRatesTickersList",
+                params: Some(Box::new(Params {
+                    time: time.to_consensus_u32(),
+                })),
+                response_channel: tx,
+            })
+            .await
+            .unwrap();
+        rx.next().await.unwrap().and_then(|resp| {
+            if let Response::OneOff(OneOffResponse::AvailableCurrencies(currencies)) = resp {
+                return Ok(currencies);
             }
             Err(Error::DataObjectMismatch)
         })

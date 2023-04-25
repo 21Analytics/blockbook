@@ -835,6 +835,19 @@ async fn test_get_current_fiat_rates() {
     assert!(rates.get(&Currency::Chf).unwrap() > &0.0);
 }
 
+#[ignore]
+#[tokio::test]
+async fn test_available_currencies() {
+    let mut client = blockbook_ws().await;
+    let tickers = client
+        .get_available_currencies(Time::from_consensus(1_682_415_368).unwrap())
+        .await
+        .unwrap()
+        .available_currencies;
+    assert!(tickers.contains(&Currency::Btc));
+    assert!(tickers.contains(&Currency::Chf));
+}
+
 fn addr_1() -> Address {
     "bc1qsej2fzpejkar82t8nyc2dhkvk54kn905vpvzpw"
         .parse()
