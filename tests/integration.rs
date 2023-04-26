@@ -3,9 +3,10 @@ use blockbook::{
     websocket::{Backend, Client, Info},
     Address, AddressBlockVout, AddressFilter, AddressInfo, AddressInfoBasic, AddressInfoDetailed,
     AddressInfoPaging, Amount, Asset, Block, BlockHash, BlockTransaction, BlockVin, BlockVout,
-    Chain, Currency, Height, OpReturn, PackedLockTime, ScriptPubKey, ScriptPubKeyType, ScriptSig,
-    Sequence, Ticker, TickersList, Time, Token, Transaction, TransactionSpecific, Tx, TxDetail,
-    Txid, Utxo, Vin, VinSpecific, Vout, VoutSpecific, Witness, XPubInfo, XPubInfoBasic,
+    Chain, Currency, Height, LockTime, NetworkUnchecked, OpReturn, ScriptBuf, ScriptPubKey,
+    ScriptPubKeyType, ScriptSig, Sequence, Ticker, TickersList, Time, Token, Transaction,
+    TransactionSpecific, Tx, TxDetail, Txid, Utxo, Vin, VinSpecific, Vout, VoutSpecific, Witness,
+    XPubInfo, XPubInfoBasic,
 };
 use std::str::FromStr;
 
@@ -62,6 +63,7 @@ async fn test_block_hash() {
     );
 }
 
+#[allow(clippy::too_many_lines)]
 #[ignore]
 #[tokio::test]
 async fn test_tx() {
@@ -73,10 +75,11 @@ async fn test_tx() {
         txid,
         version: 2,
         lock_time: None,
-        script: "0200000000010227fa15587fdefa0e4bddef8297e8e309478b6ecad3c79ccc4f11e0bf5a0ee4a60200000000ffffffff5a43b6f57bf76889924a806ae1cf2124de949c3f5acbeade82489f213837dde00000000000ffffffff034078f30100000000160014fff48015913acb35add9b3c74b5a6f76f2d145caf6c19c0000000000160014e1a8d8ab85131ec8a9521ad2e7daf16bcf3fe9e2187e36030000000016001431ac0b37f2dfa0a34c65e57c209361a916feb62d02483045022100e6bc8783be4d00222da4684b495c0e38578c72bc72d74321b776e777f430b5be02203dce27e811f0cb0b9ebad0d11d541a83344c985ec37a0273993caf582988c0a301210285b14271e50491ac26111dd42a6d9004f06a8e77355dac918c2fe7b1a7526ff002473044022036563b247efe66f50f453a6417d03bca152ad70913d7b69b29d7abcb602dd389022033f841a69c985ba457fb1c41a533fb0bce4b68a3bd42fdec60a89ab66623995901210285b14271e50491ac26111dd42a6d9004f06a8e77355dac918c2fe7b1a7526ff000000000"
-            .parse()
+        script: ScriptBuf::from_hex(
+            "0200000000010227fa15587fdefa0e4bddef8297e8e309478b6ecad3c79ccc4f11e0bf5a0ee4a60200000000ffffffff5a43b6f57bf76889924a806ae1cf2124de949c3f5acbeade82489f213837dde00000000000ffffffff034078f30100000000160014fff48015913acb35add9b3c74b5a6f76f2d145caf6c19c0000000000160014e1a8d8ab85131ec8a9521ad2e7daf16bcf3fe9e2187e36030000000016001431ac0b37f2dfa0a34c65e57c209361a916feb62d02483045022100e6bc8783be4d00222da4684b495c0e38578c72bc72d74321b776e777f430b5be02203dce27e811f0cb0b9ebad0d11d541a83344c985ec37a0273993caf582988c0a301210285b14271e50491ac26111dd42a6d9004f06a8e77355dac918c2fe7b1a7526ff002473044022036563b247efe66f50f453a6417d03bca152ad70913d7b69b29d7abcb602dd389022033f841a69c985ba457fb1c41a533fb0bce4b68a3bd42fdec60a89ab66623995901210285b14271e50491ac26111dd42a6d9004f06a8e77355dac918c2fe7b1a7526ff000000000"
+            )
             .unwrap(),
-        block_hash: Some(BlockHash::from_hash(
+        block_hash: Some(BlockHash::from_raw_hash(
             hashes::sha256d::Hash::from_str(
                 "00000000000000000006b7e2a7110c174f21633adbe955c8f86f36699bba6716",
             )
@@ -99,8 +102,9 @@ async fn test_tx() {
                 n: 0,
                 vout: Some(2),
                 addresses: vec!["bc1qxxkqkdljm7s2xnr9u47zpymp4yt0ad3df4hudm"
-                    .parse::<Address>()
-                    .unwrap()],
+                    .parse::<Address<NetworkUnchecked>>()
+                    .unwrap()
+                    .assume_checked()],
                 is_address: true,
                 value: Amount::from_sat(59_231_084),
             },
@@ -112,8 +116,9 @@ async fn test_tx() {
                 sequence: Some(Sequence(4_294_967_295)),
                 n: 1,
                 addresses: vec!["bc1qxxkqkdljm7s2xnr9u47zpymp4yt0ad3df4hudm"
-                    .parse::<blockbook::Address>()
-                    .unwrap()],
+                    .parse::<Address<NetworkUnchecked>>()
+                    .unwrap()
+                    .assume_checked()],
                 is_address: true,
                 value: Amount::from_sat(37_704_823),
             },
@@ -123,36 +128,36 @@ async fn test_tx() {
                 value: Amount::from_sat(32_733_248),
                 n: 0,
                 spent: Some(true),
-                script: "0014fff48015913acb35add9b3c74b5a6f76f2d145ca"
-                    .parse()
+                script: ScriptBuf::from_hex("0014fff48015913acb35add9b3c74b5a6f76f2d145ca")
                     .unwrap(),
                 addresses: vec!["bc1qll6gq9v38t9nttwek0r5kkn0wmedz3w2gshe0a"
-                    .parse::<Address>()
-                    .unwrap()],
+                    .parse::<Address<NetworkUnchecked>>()
+                    .unwrap()
+                    .assume_checked()],
                 is_address: true,
             },
             Vout {
                 value: Amount::from_sat(10_273_270),
                 n: 1,
                 spent: Some(true),
-                script: "0014e1a8d8ab85131ec8a9521ad2e7daf16bcf3fe9e2"
-                    .parse()
+                script: ScriptBuf::from_hex("0014e1a8d8ab85131ec8a9521ad2e7daf16bcf3fe9e2")
                     .unwrap(),
                 addresses: vec!["bc1qux5d32u9zv0v322jrtfw0kh3d08nl60z8q964g"
-                    .parse::<Address>()
-                    .unwrap()],
+                    .parse::<Address<NetworkUnchecked>>()
+                    .unwrap()
+                    .assume_checked()],
                 is_address: true,
             },
             Vout {
                 value: Amount::from_sat(53_902_872),
                 n: 2,
                 spent: Some(true),
-                script: "001431ac0b37f2dfa0a34c65e57c209361a916feb62d"
-                    .parse()
+                script: ScriptBuf::from_hex("001431ac0b37f2dfa0a34c65e57c209361a916feb62d")
                     .unwrap(),
                 addresses: vec!["bc1qxxkqkdljm7s2xnr9u47zpymp4yt0ad3df4hudm"
-                    .parse::<Address>()
-                    .unwrap()],
+                    .parse::<Address<NetworkUnchecked>>()
+                    .unwrap()
+                    .assume_checked()],
                 is_address: true,
             },
         ],
@@ -213,8 +218,9 @@ async fn test_tx_specific() {
     let expected_tx = TransactionSpecific {
         txid,
         version: 2,
-        script: "0200000000010227fa15587fdefa0e4bddef8297e8e309478b6ecad3c79ccc4f11e0bf5a0ee4a60200000000ffffffff5a43b6f57bf76889924a806ae1cf2124de949c3f5acbeade82489f213837dde00000000000ffffffff034078f30100000000160014fff48015913acb35add9b3c74b5a6f76f2d145caf6c19c0000000000160014e1a8d8ab85131ec8a9521ad2e7daf16bcf3fe9e2187e36030000000016001431ac0b37f2dfa0a34c65e57c209361a916feb62d02483045022100e6bc8783be4d00222da4684b495c0e38578c72bc72d74321b776e777f430b5be02203dce27e811f0cb0b9ebad0d11d541a83344c985ec37a0273993caf582988c0a301210285b14271e50491ac26111dd42a6d9004f06a8e77355dac918c2fe7b1a7526ff002473044022036563b247efe66f50f453a6417d03bca152ad70913d7b69b29d7abcb602dd389022033f841a69c985ba457fb1c41a533fb0bce4b68a3bd42fdec60a89ab66623995901210285b14271e50491ac26111dd42a6d9004f06a8e77355dac918c2fe7b1a7526ff000000000"
-            .parse()
+        script: ScriptBuf::from_hex(
+            "0200000000010227fa15587fdefa0e4bddef8297e8e309478b6ecad3c79ccc4f11e0bf5a0ee4a60200000000ffffffff5a43b6f57bf76889924a806ae1cf2124de949c3f5acbeade82489f213837dde00000000000ffffffff034078f30100000000160014fff48015913acb35add9b3c74b5a6f76f2d145caf6c19c0000000000160014e1a8d8ab85131ec8a9521ad2e7daf16bcf3fe9e2187e36030000000016001431ac0b37f2dfa0a34c65e57c209361a916feb62d02483045022100e6bc8783be4d00222da4684b495c0e38578c72bc72d74321b776e777f430b5be02203dce27e811f0cb0b9ebad0d11d541a83344c985ec37a0273993caf582988c0a301210285b14271e50491ac26111dd42a6d9004f06a8e77355dac918c2fe7b1a7526ff002473044022036563b247efe66f50f453a6417d03bca152ad70913d7b69b29d7abcb602dd389022033f841a69c985ba457fb1c41a533fb0bce4b68a3bd42fdec60a89ab66623995901210285b14271e50491ac26111dd42a6d9004f06a8e77355dac918c2fe7b1a7526ff000000000"
+            )
             .unwrap(),
         wtxid: "5eb2c13ef559e9aee53e803e6a8abcbfc7bb60830e2bb7fec1437f98f463e889"
             .parse()
@@ -228,7 +234,7 @@ async fn test_tx_specific() {
             .unwrap(),
         blocktime: Time::from_consensus(1_669_723_092).unwrap(),
         confirmations: tx.confirmations,
-        locktime: PackedLockTime::ZERO,
+        locktime: LockTime::ZERO,
         vin: vec![
             VinSpecific {
                 txid: "a6e40e5abfe0114fcc9cc7d3ca6e8b4709e3e89782efdd4b0efade7f5815fa27"
@@ -236,7 +242,7 @@ async fn test_tx_specific() {
                     .unwrap(),
                 sequence: Sequence(4_294_967_295),
                 vout: 2,
-                tx_in_witness: Some(Witness::from_vec(vec![
+                tx_in_witness: Some(Witness::from_slice(&[
                     Vec::from_hex(
                         "3045022100e6bc8783be4d00222da4684b495c0e38578c72bc72d74321b776e777f430b5be02203dce27e811f0cb0b9ebad0d11d541a83344c985ec37a0273993caf582988c0a301"
                     )
@@ -254,7 +260,7 @@ async fn test_tx_specific() {
                     .unwrap(),
                 sequence: Sequence(4_294_967_295),
                 vout: 0,
-                tx_in_witness: Some(Witness::from_vec(vec![
+                tx_in_witness: Some(Witness::from_slice(&[
                     Vec::from_hex(
                         "3044022036563b247efe66f50f453a6417d03bca152ad70913d7b69b29d7abcb602dd389022033f841a69c985ba457fb1c41a533fb0bce4b68a3bd42fdec60a89ab66623995901"
                     )
@@ -273,12 +279,12 @@ async fn test_tx_specific() {
                 n: 0,
                 script_pub_key: ScriptPubKey {
                     address: "bc1qll6gq9v38t9nttwek0r5kkn0wmedz3w2gshe0a"
-                        .parse::<blockbook::Address>()
-                        .unwrap(),
+                        .parse::<Address<NetworkUnchecked>>()
+                        .unwrap()
+                        .assume_checked(),
                     asm: "0 fff48015913acb35add9b3c74b5a6f76f2d145ca".into(),
                     desc: Some("addr(bc1qll6gq9v38t9nttwek0r5kkn0wmedz3w2gshe0a)#k54tyxd5".into()),
-                    script: "0014fff48015913acb35add9b3c74b5a6f76f2d145ca"
-                        .parse()
+                    script: ScriptBuf::from_hex("0014fff48015913acb35add9b3c74b5a6f76f2d145ca")
                         .unwrap(),
                     r#type: ScriptPubKeyType::WitnessV0PubKeyHash,
                 },
@@ -288,12 +294,12 @@ async fn test_tx_specific() {
                 n: 1,
                 script_pub_key: ScriptPubKey {
                     address: "bc1qux5d32u9zv0v322jrtfw0kh3d08nl60z8q964g"
-                        .parse::<blockbook::Address>()
-                        .unwrap(),
+                        .parse::<Address<NetworkUnchecked>>()
+                        .unwrap()
+                        .assume_checked(),
                     asm: "0 e1a8d8ab85131ec8a9521ad2e7daf16bcf3fe9e2".into(),
                     desc: Some("addr(bc1qux5d32u9zv0v322jrtfw0kh3d08nl60z8q964g)#f20g3jce".into()),
-                    script: "0014e1a8d8ab85131ec8a9521ad2e7daf16bcf3fe9e2"
-                        .parse()
+                    script: ScriptBuf::from_hex("0014e1a8d8ab85131ec8a9521ad2e7daf16bcf3fe9e2")
                         .unwrap(),
                     r#type: ScriptPubKeyType::WitnessV0PubKeyHash,
                 },
@@ -303,12 +309,12 @@ async fn test_tx_specific() {
                 n: 2,
                 script_pub_key: ScriptPubKey {
                     address: "bc1qxxkqkdljm7s2xnr9u47zpymp4yt0ad3df4hudm"
-                        .parse::<blockbook::Address>()
-                        .unwrap(),
+                        .parse::<Address<NetworkUnchecked>>()
+                        .unwrap()
+                        .assume_checked(),
                     asm: "0 31ac0b37f2dfa0a34c65e57c209361a916feb62d".into(),
                     desc: Some("addr(bc1qxxkqkdljm7s2xnr9u47zpymp4yt0ad3df4hudm)#mxf8kxkq".into()),
-                    script: "001431ac0b37f2dfa0a34c65e57c209361a916feb62d"
-                        .parse()
+                    script: ScriptBuf::from_hex("001431ac0b37f2dfa0a34c65e57c209361a916feb62d")
                         .unwrap(),
                     r#type: ScriptPubKeyType::WitnessV0PubKeyHash,
                 },
@@ -338,8 +344,9 @@ async fn test_tx_specific_pre_segwit() {
     let expected_tx = TransactionSpecific {
         txid,
         version: 1,
-        script: "01000000013cdefb50d22666b59b24f047b019e09a2c077ad0fb8febda33a5e0bad45990e2000000006a47304402202015dfc5b5d9030f9538c1f6e0b99fe8dbf46260044e45ad2f883744292af09b0220066353c0d19f9734278ba7072fa8b3ba1c1c30bdd583721439b8ee375a098ad8012103de2010f23c4eda698d373cfc8f7ecd576fbb4e40f67a8634ac007bb4b80a4fd4ffffffff01e62e1900000000001976a914029f45cefe259733c9d860b70f7a8385596607bf88ac00000000"
-            .parse()
+        script: ScriptBuf::from_hex(
+            "01000000013cdefb50d22666b59b24f047b019e09a2c077ad0fb8febda33a5e0bad45990e2000000006a47304402202015dfc5b5d9030f9538c1f6e0b99fe8dbf46260044e45ad2f883744292af09b0220066353c0d19f9734278ba7072fa8b3ba1c1c30bdd583721439b8ee375a098ad8012103de2010f23c4eda698d373cfc8f7ecd576fbb4e40f67a8634ac007bb4b80a4fd4ffffffff01e62e1900000000001976a914029f45cefe259733c9d860b70f7a8385596607bf88ac00000000"
+            )
             .unwrap(),
         wtxid,
         size: 191,
@@ -351,7 +358,7 @@ async fn test_tx_specific_pre_segwit() {
             .unwrap(),
         blocktime: Time::from_consensus(1_513_622_125).unwrap(),
         confirmations: tx.confirmations,
-        locktime: PackedLockTime::ZERO,
+        locktime: LockTime::ZERO,
         vin: vec![VinSpecific {
             txid: "e29059d4bae0a533daeb8ffbd07a072c9ae019b047f0249bb56626d250fbde3c"
                 .parse()
@@ -362,8 +369,9 @@ async fn test_tx_specific_pre_segwit() {
             script_sig: ScriptSig {
                 asm: "304402202015dfc5b5d9030f9538c1f6e0b99fe8dbf46260044e45ad2f883744292af09b0220066353c0d19f9734278ba7072fa8b3ba1c1c30bdd583721439b8ee375a098ad8[ALL] 03de2010f23c4eda698d373cfc8f7ecd576fbb4e40f67a8634ac007bb4b80a4fd4"
                     .into(),
-                script: "47304402202015dfc5b5d9030f9538c1f6e0b99fe8dbf46260044e45ad2f883744292af09b0220066353c0d19f9734278ba7072fa8b3ba1c1c30bdd583721439b8ee375a098ad8012103de2010f23c4eda698d373cfc8f7ecd576fbb4e40f67a8634ac007bb4b80a4fd4"
-                    .parse()
+                script: ScriptBuf::from_hex(
+                    "47304402202015dfc5b5d9030f9538c1f6e0b99fe8dbf46260044e45ad2f883744292af09b0220066353c0d19f9734278ba7072fa8b3ba1c1c30bdd583721439b8ee375a098ad8012103de2010f23c4eda698d373cfc8f7ecd576fbb4e40f67a8634ac007bb4b80a4fd4"
+                    )
                     .unwrap(),
             },
         }],
@@ -372,13 +380,13 @@ async fn test_tx_specific_pre_segwit() {
             n: 0,
             script_pub_key: ScriptPubKey {
                 address: "1Es9qximvz5W9TqtZfxx9cV7thmvDutWf"
-                    .parse::<blockbook::Address>()
-                    .unwrap(),
+                    .parse::<Address<NetworkUnchecked>>()
+                    .unwrap()
+                    .assume_checked(),
                 asm: "OP_DUP OP_HASH160 029f45cefe259733c9d860b70f7a8385596607bf OP_EQUALVERIFY OP_CHECKSIG"
                     .into(),
                 desc: Some("addr(1Es9qximvz5W9TqtZfxx9cV7thmvDutWf)#4h8xrdj5".into()),
-                script: "76a914029f45cefe259733c9d860b70f7a8385596607bf88ac"
-                    .parse()
+                script: ScriptBuf::from_hex("76a914029f45cefe259733c9d860b70f7a8385596607bf88ac")
                     .unwrap(),
                 r#type: ScriptPubKeyType::PubKeyHash,
             },
@@ -444,7 +452,10 @@ async fn test_block_by_hash() {
                     n: 0,
                     spent: Some(true),
                     addresses: vec![AddressBlockVout::Address(
-                        "1HWqMzw1jfpXb3xyuUZ4uWXY4tqL2cW47J".parse().unwrap(),
+                        "1HWqMzw1jfpXb3xyuUZ4uWXY4tqL2cW47J"
+                            .parse::<Address<NetworkUnchecked>>()
+                            .unwrap()
+                            .assume_checked(),
                     )],
                     is_address: true,
                 }],
@@ -464,7 +475,10 @@ async fn test_block_by_hash() {
                     .unwrap(),
                 vin: vec![BlockVin {
                     n: 0,
-                    addresses: Some(vec!["1BNwxHGaFbeUBitpjy2AsKpJ29Ybxntqvb".parse().unwrap()]),
+                    addresses: Some(vec!["1BNwxHGaFbeUBitpjy2AsKpJ29Ybxntqvb"
+                        .parse::<Address<NetworkUnchecked>>()
+                        .unwrap()
+                        .assume_checked()]),
                     is_address: true,
                     value: Amount::from_sat(5_000_000_000),
                 }],
@@ -474,7 +488,10 @@ async fn test_block_by_hash() {
                         n: 0,
                         spent: Some(true),
                         addresses: vec![AddressBlockVout::Address(
-                            "1JqDybm2nWTENrHvMyafbSXXtTk5Uv5QAn".parse().unwrap(),
+                            "1JqDybm2nWTENrHvMyafbSXXtTk5Uv5QAn"
+                                .parse::<Address<NetworkUnchecked>>()
+                                .unwrap()
+                                .assume_checked(),
                         )],
                         is_address: true,
                     },
@@ -483,7 +500,10 @@ async fn test_block_by_hash() {
                         n: 1,
                         spent: Some(true),
                         addresses: vec![AddressBlockVout::Address(
-                            "1EYTGtG4LnFfiMvjJdsU7GMGCQvsRSjYhx".parse().unwrap(),
+                            "1EYTGtG4LnFfiMvjJdsU7GMGCQvsRSjYhx"
+                                .parse::<Address<NetworkUnchecked>>()
+                                .unwrap()
+                                .assume_checked(),
                         )],
                         is_address: true,
                     },
@@ -504,7 +524,10 @@ async fn test_block_by_hash() {
                     .unwrap(),
                 vin: vec![BlockVin {
                     n: 0,
-                    addresses: Some(vec!["15vScfMHNrXN4QvWe54q5hwfVoYwG79CS1".parse().unwrap()]),
+                    addresses: Some(vec!["15vScfMHNrXN4QvWe54q5hwfVoYwG79CS1"
+                        .parse::<Address<NetworkUnchecked>>()
+                        .unwrap()
+                        .assume_checked()]),
                     is_address: true,
                     value: Amount::from_sat(300_000_000),
                 }],
@@ -514,7 +537,10 @@ async fn test_block_by_hash() {
                         n: 0,
                         spent: Some(true),
                         addresses: vec![AddressBlockVout::Address(
-                            "1H8ANdafjpqYntniT3Ddxh4xPBMCSz33pj".parse().unwrap(),
+                            "1H8ANdafjpqYntniT3Ddxh4xPBMCSz33pj"
+                                .parse::<Address<NetworkUnchecked>>()
+                                .unwrap()
+                                .assume_checked(),
                         )],
                         is_address: true,
                     },
@@ -523,7 +549,10 @@ async fn test_block_by_hash() {
                         n: 1,
                         spent: Some(true),
                         addresses: vec![AddressBlockVout::Address(
-                            "1Am9UTGfdnxabvcywYG2hvzr6qK8T3oUZT".parse().unwrap(),
+                            "1Am9UTGfdnxabvcywYG2hvzr6qK8T3oUZT"
+                                .parse::<Address<NetworkUnchecked>>()
+                                .unwrap()
+                                .assume_checked(),
                         )],
                         is_address: true,
                     },
@@ -544,7 +573,10 @@ async fn test_block_by_hash() {
                     .unwrap(),
                 vin: vec![BlockVin {
                     n: 0,
-                    addresses: Some(vec!["1JxDJCyWNakZ5kECKdCU9Zka6mh34mZ7B2".parse().unwrap()]),
+                    addresses: Some(vec!["1JxDJCyWNakZ5kECKdCU9Zka6mh34mZ7B2"
+                        .parse::<Address<NetworkUnchecked>>()
+                        .unwrap()
+                        .assume_checked()]),
                     is_address: true,
                     value: Amount::from_sat(1_000_000),
                 }],
@@ -553,7 +585,10 @@ async fn test_block_by_hash() {
                     n: 0,
                     spent: Some(true),
                     addresses: vec![AddressBlockVout::Address(
-                        "16FuTPaeRSPVxxCnwQmdyx2PQWxX6HWzhQ".parse().unwrap(),
+                        "16FuTPaeRSPVxxCnwQmdyx2PQWxX6HWzhQ"
+                            .parse::<Address<NetworkUnchecked>>()
+                            .unwrap()
+                            .assume_checked(),
                     )],
                     is_address: true,
                 }],
@@ -624,7 +659,10 @@ async fn test_block_by_height_with_opreturn_output() {
                     n: 0,
                     spent: Some(true),
                     addresses: vec![AddressBlockVout::Address(
-                        "1NS4gbx1G2D5rc9PnvVsPys12nKxGiQg72".parse().unwrap(),
+                        "1NS4gbx1G2D5rc9PnvVsPys12nKxGiQg72"
+                        .parse::<Address<NetworkUnchecked>>()
+                        .unwrap()
+                        .assume_checked(),
                     )],
                     is_address: true,
                 },
@@ -948,8 +986,9 @@ async fn test_utxos_from_address_ws() {
     let utxos = client
         .get_utxos_from_address(
             "bc1q5au2nmza9pmplnvgzyd4ky7egu2wya56qa024u"
-                .parse()
-                .unwrap(),
+                .parse::<Address<NetworkUnchecked>>()
+                .unwrap()
+                .assume_checked(),
         )
         .await
         .unwrap();
@@ -975,7 +1014,10 @@ async fn test_utxos_from_address_ws() {
 async fn test_balance_history() {
     let client = blockbook();
     let mut ws_client = blockbook_ws().await;
-    let address: Address = "399WojVNByUJZSuJDAKYJ8EQmbkDUgHuT6".parse().unwrap();
+    let address: Address = "399WojVNByUJZSuJDAKYJ8EQmbkDUgHuT6"
+        .parse::<Address<NetworkUnchecked>>()
+        .unwrap()
+        .assume_checked();
     let from = Time::from_consensus(1_676_000_000).unwrap();
     let to = Time::from_consensus(1_682_000_000).unwrap();
     let group_by = 1_000_000;
@@ -1040,8 +1082,9 @@ async fn test_balance_history() {
 
 fn addr_1() -> Address {
     "bc1qsej2fzpejkar82t8nyc2dhkvk54kn905vpvzpw"
-        .parse()
+        .parse::<Address<NetworkUnchecked>>()
         .unwrap()
+        .assume_checked()
 }
 
 #[ignore]
@@ -1079,7 +1122,10 @@ async fn test_address_info_specific_no_args() {
 }
 
 fn counterparty_burner_addr() -> Address {
-    "1CounterpartyXXXXXXXXXXXXXXXUWLpVr".parse().unwrap()
+    "1CounterpartyXXXXXXXXXXXXXXXUWLpVr"
+        .parse::<Address<NetworkUnchecked>>()
+        .unwrap()
+        .assume_checked()
 }
 
 #[ignore]
@@ -1124,7 +1170,10 @@ async fn test_address_info_specific_page() {
 }
 
 fn addr_2() -> Address {
-    "3Kzh9qAqVWQhEsfQz7zEQL1EuSx5tyNLNS".parse().unwrap()
+    "3Kzh9qAqVWQhEsfQz7zEQL1EuSx5tyNLNS"
+        .parse::<Address<NetworkUnchecked>>()
+        .unwrap()
+        .assume_checked()
 }
 
 #[ignore]
@@ -1210,6 +1259,7 @@ async fn test_address_info_specific_blocks() {
     assert_eq!(address_info, websocket_info);
 }
 
+#[allow(clippy::too_many_lines)]
 #[ignore]
 #[tokio::test]
 async fn test_address_info_specific_blocks_details() {
@@ -1256,15 +1306,17 @@ async fn test_address_info_specific_blocks_details() {
                 is_address: true,
                 value: Amount::from_sat(3_084_293),
                 n: 0,
-                addresses: vec!["1LyqvGRjLoznNX2RbytTvuyswDpDVqoYt7".parse().unwrap()],
+                addresses: vec!["1LyqvGRjLoznNX2RbytTvuyswDpDVqoYt7"
+                    .parse::<Address<NetworkUnchecked>>()
+                    .unwrap()
+                    .assume_checked()],
             }],
             vout: vec![
                 Vout {
                     value: Amount::from_sat(11_700),
                     n: 0,
                     spent: Some(true),
-                    script: "a914c8ca150ee82589d47f69b8dcd7cad684d88283f187"
-                        .parse()
+                    script: ScriptBuf::from_hex("a914c8ca150ee82589d47f69b8dcd7cad684d88283f187")
                         .unwrap(),
                     addresses: vec![addr_2()],
                     is_address: true,
@@ -1273,10 +1325,12 @@ async fn test_address_info_specific_blocks_details() {
                     value: Amount::from_sat(3_049_993),
                     n: 1,
                     spent: Some(true),
-                    script: "76a9147d55684397c290fbc638bdc52528350088b8837488ac"
-                        .parse()
+                    script: ScriptBuf::from_hex("76a9147d55684397c290fbc638bdc52528350088b8837488ac")
                         .unwrap(),
-                    addresses: vec!["1CRhnBV2q8ToQcaKMBBkeooJdNX9ohSWDc".parse().unwrap()],
+                    addresses: vec!["1CRhnBV2q8ToQcaKMBBkeooJdNX9ohSWDc"
+                        .parse::<Address<NetworkUnchecked>>()
+                        .unwrap()
+                        .assume_checked()],
                     is_address: true,
                 },
             ],
@@ -1295,7 +1349,10 @@ async fn test_address_info_specific_blocks_details() {
             value: Amount::from_sat(3_061_693),
             value_in: Amount::from_sat(3_084_293),
             fees: Amount::from_sat(22_600),
-            script: "010000000106f98070e34138640e36329f4ec920cf51f70030b91e41bf1a5c89ac8cf763a5010000006a47304402200a54b9076c0fd91c3bcaa5c55a0721d18893b6aa204c87198d072555aff3bf2e02206aa296427da8eb404203044e9e33d5f69dbbdbc43be95dd4ac5c675b8c341c7301210241d3f009960b9695c8b7c546128aa4d01daf57c4ff562f6d1f30c2a85119af1cffffffff02b42d00000000000017a914c8ca150ee82589d47f69b8dcd7cad684d88283f187098a2e00000000001976a9147d55684397c290fbc638bdc52528350088b8837488ac00000000".parse().unwrap(),
+            script: ScriptBuf::from_hex(
+                "010000000106f98070e34138640e36329f4ec920cf51f70030b91e41bf1a5c89ac8cf763a5010000006a47304402200a54b9076c0fd91c3bcaa5c55a0721d18893b6aa204c87198d072555aff3bf2e02206aa296427da8eb404203044e9e33d5f69dbbdbc43be95dd4ac5c675b8c341c7301210241d3f009960b9695c8b7c546128aa4d01daf57c4ff562f6d1f30c2a85119af1cffffffff02b42d00000000000017a914c8ca150ee82589d47f69b8dcd7cad684d88283f187098a2e00000000001976a9147d55684397c290fbc638bdc52528350088b8837488ac00000000"
+                )
+                .unwrap(),
         })],
     };
     assert_eq!(&address_info, &expected_address_info);
@@ -1354,7 +1411,10 @@ async fn test_address_info_specific_blocks_details_light() {
                 is_address: true,
                 value: Amount::from_sat(3_084_293),
                 n: 0,
-                addresses: Some(vec!["1LyqvGRjLoznNX2RbytTvuyswDpDVqoYt7".parse().unwrap()]),
+                addresses: Some(vec!["1LyqvGRjLoznNX2RbytTvuyswDpDVqoYt7"
+                    .parse::<Address<NetworkUnchecked>>()
+                    .unwrap()
+                    .assume_checked()]),
             }],
             vout: vec![
                 BlockVout {
@@ -1369,7 +1429,10 @@ async fn test_address_info_specific_blocks_details_light() {
                     n: 1,
                     spent: Some(true),
                     addresses: vec![AddressBlockVout::Address(
-                        "1CRhnBV2q8ToQcaKMBBkeooJdNX9ohSWDc".parse().unwrap(),
+                        "1CRhnBV2q8ToQcaKMBBkeooJdNX9ohSWDc"
+                            .parse::<Address<NetworkUnchecked>>()
+                            .unwrap()
+                            .assume_checked(),
                     )],
                     is_address: true,
                 },
@@ -1398,8 +1461,9 @@ async fn test_address_info_correct_variant_full() {
     let address_info_full = blockbook()
         .address_info_specific_detailed(
             &"bc1qhjhn2gm6mv4k99942ud4spe54483drh330faax"
-                .parse()
-                .unwrap(),
+                .parse::<Address<NetworkUnchecked>>()
+                .unwrap()
+                .assume_checked(),
             None,
             None,
             None,
@@ -1421,8 +1485,9 @@ async fn test_address_info_correct_variant_light() {
     let address_info_light = blockbook()
         .address_info_specific_detailed(
             &"bc1qhjhn2gm6mv4k99942ud4spe54483drh330faax"
-                .parse()
-                .unwrap(),
+                .parse::<Address<NetworkUnchecked>>()
+                .unwrap()
+                .assume_checked(),
             None,
             None,
             None,
@@ -1440,8 +1505,9 @@ async fn test_address_info_correct_variant_light() {
 
 fn xpub_addr() -> Address {
     "bc1q5au2nmza9pmplnvgzyd4ky7egu2wya56qa024u"
-        .parse()
+        .parse::<Address<NetworkUnchecked>>()
         .unwrap()
+        .assume_checked()
 }
 
 #[ignore]
@@ -1561,8 +1627,9 @@ fn token() -> Token {
     Token {
         r#type: "XPUBAddress".to_string(),
         address: "bc1q5au2nmza9pmplnvgzyd4ky7egu2wya56qa024u"
-            .parse()
-            .unwrap(),
+            .parse::<Address<NetworkUnchecked>>()
+            .unwrap()
+            .assume_checked(),
         path: "m/84'/0'/0'/0/0".parse().unwrap(),
         transfers: 1,
         decimals: 8,
@@ -1731,7 +1798,10 @@ async fn test_xpub_info_entire_txs() {
                 vout: Some(24),
                 sequence: Some(Sequence(4_294_967_293)),
                 n: 0,
-                addresses: vec!["3AVvCje8AHCXrvgL8ZNsqUFdiu4LxmdNJk".parse().unwrap()],
+                addresses: vec!["3AVvCje8AHCXrvgL8ZNsqUFdiu4LxmdNJk"
+                    .parse::<Address<NetworkUnchecked>>()
+                    .unwrap()
+                    .assume_checked()],
                 is_address: true,
                 value: Amount::from_sat(137_000),
             }],
@@ -1739,22 +1809,24 @@ async fn test_xpub_info_entire_txs() {
                 Vout {
                     value: Amount::from_sat(135_146),
                     n: 0,
-                    script: "a9143d46e616b172612000e823699338a5b0a9e6c6f387"
-                        .parse()
+                    script: ScriptBuf::from_hex("a9143d46e616b172612000e823699338a5b0a9e6c6f387")
                         .unwrap(),
-                    addresses: vec!["37H25Nx78ueHFhwr2KWGVcVu1155WLtb92".parse().unwrap()],
+                    addresses: vec!["37H25Nx78ueHFhwr2KWGVcVu1155WLtb92"
+                        .parse::<Address<NetworkUnchecked>>()
+                        .unwrap()
+                        .assume_checked()],
                     is_address: true,
                     spent: Some(true),
                 },
                 Vout {
                     value: Amount::from_sat(821),
                     n: 1,
-                    script: "0014a778a9ec5d28761fcd88111b5b13d94714e2769a"
-                        .parse()
+                    script: ScriptBuf::from_hex("0014a778a9ec5d28761fcd88111b5b13d94714e2769a")
                         .unwrap(),
                     addresses: vec!["bc1q5au2nmza9pmplnvgzyd4ky7egu2wya56qa024u"
-                        .parse()
-                        .unwrap()],
+                        .parse::<Address<NetworkUnchecked>>()
+                        .unwrap()
+                        .assume_checked()],
                     is_address: true,
                     spent: None,
                 },
@@ -1777,8 +1849,9 @@ async fn test_xpub_info_entire_txs() {
             value_in: Amount::from_sat(137_000),
             fees: Amount::from_sat(1_033),
             script:
-                "02000000000101169e3e3b3e453e42cf15d0a076a111eecf10e94ee46ac1cfaf00b664c36d646c18000000232200206e0d706cbd560f4c9845604991ce15a47dea5e854f9b56ae11decf6d98a7a821fdffffff02ea0f02000000000017a9143d46e616b172612000e823699338a5b0a9e6c6f3873503000000000000160014a778a9ec5d28761fcd88111b5b13d94714e2769a03473044022018286becb369315af56ea7ab496588ace0e34e17b9c27b6ea06c65f794f07a4202202617528bfffcb75083700a86ee40551c25c8f62717ac962ce4733d033729abda014730440220276366c3cc6b1947d7be49ceb54c5ba6511ad74596119b7beeaf8b0bb21c267f02201a6e96d8735e08db6155b49e0ef4c9344c8f663a3dda3f795c718e43d7210294014e2102fab4f766e50937a07b96b045d12e210a28ca43570e9d46f8a6f6b3c385d5e7c7ad2102eef58d1fe659a43ef061b3646d51719f1005de7b74967786e75c5c6fb4e739a9ac73640380ca00b2689af60b00"
-                    .parse()
+                ScriptBuf::from_hex(
+                    "02000000000101169e3e3b3e453e42cf15d0a076a111eecf10e94ee46ac1cfaf00b664c36d646c18000000232200206e0d706cbd560f4c9845604991ce15a47dea5e854f9b56ae11decf6d98a7a821fdffffff02ea0f02000000000017a9143d46e616b172612000e823699338a5b0a9e6c6f3873503000000000000160014a778a9ec5d28761fcd88111b5b13d94714e2769a03473044022018286becb369315af56ea7ab496588ace0e34e17b9c27b6ea06c65f794f07a4202202617528bfffcb75083700a86ee40551c25c8f62717ac962ce4733d033729abda014730440220276366c3cc6b1947d7be49ceb54c5ba6511ad74596119b7beeaf8b0bb21c267f02201a6e96d8735e08db6155b49e0ef4c9344c8f663a3dda3f795c718e43d7210294014e2102fab4f766e50937a07b96b045d12e210a28ca43570e9d46f8a6f6b3c385d5e7c7ad2102eef58d1fe659a43ef061b3646d51719f1005de7b74967786e75c5c6fb4e739a9ac73640380ca00b2689af60b00"
+                    )
                     .unwrap(),
         }]),
     };

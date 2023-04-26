@@ -88,6 +88,7 @@ enum StreamingResponse {
         rates: std::collections::HashMap<super::Currency, f64>,
     },
     Address {
+        #[serde(deserialize_with = "super::deserialize_address")]
         address: super::Address,
         tx: super::Transaction,
     },

@@ -8,7 +8,7 @@ description = "A robust and blazing fast blockbook blockexporer client"
 keywords = ["crypto", "bitcoin", "blockexplorer", "blockbook", "client"]
 
 [dependencies]
-bitcoin = { version = "0.29", default-features = false, features = [ "std", "serde" ] }
+bitcoin = { version = "0.30", default-features = false, features = [ "std", "serde" ] }
 chrono = { version = "0.4", default-features = false, features = ["serde"] }
 erased-serde = "0.3"
 futures = "0.3"

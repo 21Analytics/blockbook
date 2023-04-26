@@ -1,14 +1,15 @@
 pub mod websocket;
 
 mod external {
-    pub use bitcoin::blockdata::locktime::{Height, PackedLockTime, Time};
-    pub use bitcoin::blockdata::script::Script;
+    pub use bitcoin::address::Address;
+    pub use bitcoin::address::NetworkUnchecked;
+    pub use bitcoin::amount::Amount;
+    pub use bitcoin::bip32::DerivationPath;
+    pub use bitcoin::blockdata::locktime::absolute::{Height, LockTime, Time};
+    pub use bitcoin::blockdata::script::ScriptBuf;
     pub use bitcoin::blockdata::witness::Witness;
     pub use bitcoin::hash_types::{BlockHash, TxMerkleNode, Txid, Wtxid};
     pub use bitcoin::hashes;
-    pub use bitcoin::util::address::Address;
-    pub use bitcoin::util::amount::Amount;
-    pub use bitcoin::util::bip32::DerivationPath;
     pub use bitcoin::Sequence;
     pub use bitcoin::Transaction as BitcoinTransaction;
     pub use reqwest::Error as ReqwestError;
@@ -407,6 +408,7 @@ pub struct XPubInfoBasic {
 pub struct Token {
     pub r#type: String,
     #[serde(rename = "name")]
+    #[serde(deserialize_with = "deserialize_address")]
     pub address: Address,
     pub path: DerivationPath,
     pub transfers: u32,
@@ -501,9 +503,42 @@ pub struct AddressInfo {
     pub txids: Vec<Txid>,
 }
 
+fn deserialize_address<'de, D>(deserializer: D) -> std::result::Result<Address, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let unchecked_address: Address<NetworkUnchecked> =
+        serde::Deserialize::deserialize(deserializer)?;
+    unchecked_address
+        .require_network(bitcoin::network::constants::Network::Bitcoin)
+        .map_err(|error| {
+            serde::de::Error::custom(
+                if let bitcoin::address::Error::NetworkValidation { found, .. } = error {
+                    format!("invalid address: network {found} is not supported")
+                } else {
+                    format!("unexpected error: {error}")
+                },
+            )
+        })
+}
+
+fn deserialize_optional_address<'de, D>(
+    deserializer: D,
+) -> std::result::Result<Option<Address>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    #[derive(serde::Deserialize)]
+    struct Helper(#[serde(deserialize_with = "deserialize_address")] Address);
+
+    let helper_option: Option<Helper> = serde::Deserialize::deserialize(deserializer)?;
+    Ok(helper_option.map(|helper| helper.0))
+}
+
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AddressInfoBasic {
+    #[serde(deserialize_with = "deserialize_address")]
     pub address: Address,
     #[serde(with = "amount")]
     pub balance: Amount,
@@ -537,6 +572,8 @@ pub struct Utxo {
     #[serde(rename = "lockTime")]
     pub locktime: Option<Time>,
     pub coinbase: Option<bool>,
+    #[serde(deserialize_with = "deserialize_optional_address")]
+    #[serde(default)]
     pub address: Option<Address>,
     pub path: Option<DerivationPath>,
 }
@@ -591,12 +628,27 @@ pub struct BlockTransaction {
     pub fees: Amount,
 }
 
+fn deserialize_optional_address_vector<'de, D>(
+    deserializer: D,
+) -> std::result::Result<Option<Vec<Address>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    #[derive(serde::Deserialize)]
+    struct Helper(#[serde(deserialize_with = "deserialize_address_vector")] Vec<Address>);
+
+    let helper_option: Option<Helper> = serde::Deserialize::deserialize(deserializer)?;
+    Ok(helper_option.map(|helper| helper.0))
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BlockVin {
     pub n: u16,
     /// Can be `None` or multiple addresses for a non-standard script,
     /// where the latter indicates a multisig input
+    #[serde(deserialize_with = "deserialize_optional_address_vector")]
+    #[serde(default)]
     pub addresses: Option<Vec<Address>>,
     /// Indicates a [standard script](https://github.com/trezor/blockbook/blob/0ebbf16f18551f1c73b59bec6cfcbbdc96ec47e8/bchain/coins/btc/bitcoinlikeparser.go#L193-L194)
     pub is_address: bool,
@@ -619,6 +671,7 @@ pub struct BlockVout {
 #[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(untagged)]
 pub enum AddressBlockVout {
+    #[serde(deserialize_with = "deserialize_address")]
     Address(Address),
     OpReturn(OpReturn),
 }
@@ -716,7 +769,7 @@ mod amount {
             E: serde::de::Error,
         {
             if let Ok(amount) =
-                super::Amount::from_str_in(value, bitcoin::util::amount::Denomination::Satoshi)
+                super::Amount::from_str_in(value, bitcoin::amount::Denomination::Satoshi)
             {
                 Ok(amount)
             } else {
@@ -848,7 +901,20 @@ pub struct Transaction {
     #[serde(with = "amount")]
     pub fees: Amount,
     #[serde(rename = "hex")]
-    pub script: Script,
+    pub script: ScriptBuf,
+}
+
+fn deserialize_address_vector<'de, D>(
+    deserializer: D,
+) -> std::result::Result<Vec<Address>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    #[derive(serde::Deserialize)]
+    struct Helper(#[serde(deserialize_with = "deserialize_address")] Address);
+
+    let helper_vector: Vec<Helper> = serde::Deserialize::deserialize(deserializer)?;
+    Ok(helper_vector.into_iter().map(|helper| helper.0).collect())
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -858,6 +924,7 @@ pub struct Vin {
     pub vout: Option<u16>,
     pub sequence: Option<Sequence>,
     pub n: u16,
+    #[serde(deserialize_with = "deserialize_address_vector")]
     pub addresses: Vec<Address>,
     pub is_address: bool,
     #[serde(with = "amount")]
@@ -872,7 +939,8 @@ pub struct Vout {
     pub n: u16,
     pub spent: Option<bool>,
     #[serde(rename = "hex")]
-    pub script: Script,
+    pub script: ScriptBuf,
+    #[serde(deserialize_with = "deserialize_address_vector")]
     pub addresses: Vec<Address>,
     pub is_address: bool,
 }
@@ -889,9 +957,9 @@ pub struct TransactionSpecific {
     #[serde(rename = "hash")]
     pub wtxid: Wtxid,
     pub confirmations: u32,
-    pub locktime: PackedLockTime,
+    pub locktime: LockTime,
     #[serde(rename = "hex")]
-    pub script: Script,
+    pub script: ScriptBuf,
     pub size: u32,
     pub time: Time,
     pub vsize: u32,
@@ -915,7 +983,7 @@ pub struct VinSpecific {
 pub struct ScriptSig {
     pub asm: String,
     #[serde(rename = "hex")]
-    pub script: Script,
+    pub script: ScriptBuf,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -931,11 +999,12 @@ pub struct VoutSpecific {
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 pub struct ScriptPubKey {
+    #[serde(deserialize_with = "deserialize_address")]
     pub address: Address,
     pub asm: String,
     pub desc: Option<String>,
     #[serde(rename = "hex")]
-    pub script: Script,
+    pub script: ScriptBuf,
     pub r#type: ScriptPubKeyType,
 }
 
