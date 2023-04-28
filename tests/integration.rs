@@ -877,6 +877,45 @@ async fn test_utxos_from_address_ws() {
     assert_eq!(utxos.get(0).unwrap(), &expected_utxo);
 }
 
+#[ignore]
+#[tokio::test]
+async fn test_balance_history_ws() {
+    let mut client = blockbook_ws().await;
+    let address: Address = "399WojVNByUJZSuJDAKYJ8EQmbkDUgHuT6".parse().unwrap();
+    let from = Time::from_consensus(1_676_000_000).unwrap();
+    let to = Time::from_consensus(1_682_000_000).unwrap();
+    let history_1 = client
+        .get_balance_history(
+            address.clone(),
+            Some(from),
+            Some(to),
+            Some(vec![Currency::Chf]),
+            Some(1_000_000),
+        )
+        .await
+        .unwrap();
+    assert_eq!(history_1.len(), 6);
+    let tx_count_1: u32 = history_1.iter().map(|entry| entry.txs).sum();
+    let received_count_1: Amount = history_1.iter().map(|entry| entry.received).sum();
+
+    let history_2 = client
+        .get_balance_history(
+            address,
+            Some(from),
+            Some(to),
+            Some(vec![Currency::Chf]),
+            Some(2_000_000),
+        )
+        .await
+        .unwrap();
+    assert_eq!(history_2.len(), 3);
+    let tx_count_2: u32 = history_2.iter().map(|entry| entry.txs).sum();
+    let received_count_2 = history_2.iter().map(|entry| entry.received).sum();
+
+    assert_eq!(tx_count_1, tx_count_2);
+    assert_eq!(received_count_1, received_count_2);
+}
+
 fn addr_1() -> Address {
     "bc1qsej2fzpejkar82t8nyc2dhkvk54kn905vpvzpw"
         .parse()

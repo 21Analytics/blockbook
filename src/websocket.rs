@@ -95,6 +95,7 @@ enum OneOffResponse {
     CurrentFiatRates(FiatRates),
     AvailableCurrencies(super::TickersList),
     UtxosFromAddress(Vec<super::Utxo>),
+    BalanceHistory(Vec<BalanceHistory>),
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -391,6 +392,50 @@ impl Client {
         })
     }
 
+    /// The `group_by` parameter sets the interval length (in seconds)
+    /// over which transactions are consolidated into [`BalanceHistory`]
+    /// entries. Defaults to 3600s.
+    pub async fn get_balance_history(
+        &mut self,
+        address: super::Address,
+        from: Option<super::Time>,
+        to: Option<super::Time>,
+        currencies: Option<Vec<super::Currency>>,
+        group_by: Option<u32>,
+    ) -> Result<Vec<BalanceHistory>> {
+        #[derive(serde::Serialize)]
+        struct Params {
+            descriptor: super::Address,
+            from: Option<super::Time>,
+            to: Option<super::Time>,
+            currencies: Option<Vec<super::Currency>>,
+            #[serde(rename = "groupBy")]
+            group_by: Option<u32>,
+        }
+
+        let (tx, mut rx) = futures::channel::mpsc::channel(1);
+        self.jobs
+            .send(Job {
+                method: "getBalanceHistory",
+                params: Some(Box::new(Params {
+                    descriptor: address,
+                    from,
+                    to,
+                    currencies,
+                    group_by,
+                })),
+                response_channel: tx,
+            })
+            .await
+            .unwrap();
+        rx.next().await.unwrap().and_then(|resp| {
+            if let Response::OneOff(OneOffResponse::BalanceHistory(history)) = resp {
+                return Ok(history);
+            }
+            Err(Error::DataObjectMismatch)
+        })
+    }
+
     pub async fn subscribe_blocks(&mut self) -> impl futures::stream::Stream<Item = Result<Block>> {
         let (tx, rx) = futures::channel::mpsc::channel(10);
         self.jobs
@@ -416,5 +461,19 @@ impl Client {
 pub struct FiatRates {
     #[serde(rename = "ts")]
     pub timestamp: u32,
+    pub rates: std::collections::HashMap<super::Currency, f64>,
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct BalanceHistory {
+    pub time: super::Time,
+    pub txs: u32,
+    #[serde(with = "super::amount")]
+    pub received: super::Amount,
+    #[serde(with = "super::amount")]
+    pub sent: super::Amount,
+    #[serde(rename = "sentToSelf")]
+    #[serde(with = "super::amount")]
+    pub sent_to_self: super::Amount,
     pub rates: std::collections::HashMap<super::Currency, f64>,
 }
