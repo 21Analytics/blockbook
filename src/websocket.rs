@@ -96,6 +96,7 @@ enum OneOffResponse {
     AvailableCurrencies(super::TickersList),
     UtxosFromAddress(Vec<super::Utxo>),
     BalanceHistory(Vec<BalanceHistory>),
+    Transaction(super::Transaction),
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -359,6 +360,29 @@ impl Client {
         rx.next().await.unwrap().and_then(|resp| {
             if let Response::OneOff(OneOffResponse::AvailableCurrencies(currencies)) = resp {
                 return Ok(currencies);
+            }
+            Err(Error::DataObjectMismatch)
+        })
+    }
+
+    pub async fn transaction(&mut self, txid: super::Txid) -> Result<super::Transaction> {
+        #[derive(serde::Serialize)]
+        struct Params {
+            txid: super::Txid,
+        }
+
+        let (tx, mut rx) = futures::channel::mpsc::channel(1);
+        self.jobs
+            .send(Job {
+                method: "getTransaction",
+                params: Some(Box::new(Params { txid })),
+                response_channel: tx,
+            })
+            .await
+            .unwrap();
+        rx.next().await.unwrap().and_then(|resp| {
+            if let Response::OneOff(OneOffResponse::Transaction(tx)) = resp {
+                return Ok(tx);
             }
             Err(Error::DataObjectMismatch)
         })
