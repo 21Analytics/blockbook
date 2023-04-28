@@ -94,6 +94,7 @@ enum OneOffResponse {
     BlockHash { hash: super::BlockHash },
     CurrentFiatRates(FiatRates),
     AvailableCurrencies(super::TickersList),
+    UtxosFromAddress(Vec<super::Utxo>),
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -357,6 +358,34 @@ impl Client {
         rx.next().await.unwrap().and_then(|resp| {
             if let Response::OneOff(OneOffResponse::AvailableCurrencies(currencies)) = resp {
                 return Ok(currencies);
+            }
+            Err(Error::DataObjectMismatch)
+        })
+    }
+
+    pub async fn get_utxos_from_address(
+        &mut self,
+        address: super::Address,
+    ) -> Result<Vec<super::Utxo>> {
+        #[derive(serde::Serialize)]
+        struct Params {
+            descriptor: super::Address,
+        }
+
+        let (tx, mut rx) = futures::channel::mpsc::channel(1);
+        self.jobs
+            .send(Job {
+                method: "getAccountUtxo",
+                params: Some(Box::new(Params {
+                    descriptor: address,
+                })),
+                response_channel: tx,
+            })
+            .await
+            .unwrap();
+        rx.next().await.unwrap().and_then(|resp| {
+            if let Response::OneOff(OneOffResponse::UtxosFromAddress(utxos)) = resp {
+                return Ok(utxos);
             }
             Err(Error::DataObjectMismatch)
         })

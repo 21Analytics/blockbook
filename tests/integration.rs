@@ -848,6 +848,35 @@ async fn test_available_currencies() {
     assert!(tickers.contains(&Currency::Chf));
 }
 
+#[ignore]
+#[tokio::test]
+async fn test_utxos_from_address_ws() {
+    let mut client = blockbook_ws().await;
+    let utxos = client
+        .get_utxos_from_address(
+            "bc1q5au2nmza9pmplnvgzyd4ky7egu2wya56qa024u"
+                .parse()
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(utxos.len(), 1);
+    let expected_utxo = Utxo {
+        txid: "d60691ecdf678eb3f88ebfaf315d3907d0be62ccd40fd1f027938249966f268d"
+            .parse()
+            .unwrap(),
+        vout: 1,
+        value: Amount::from_sat(821),
+        height: Some(Height::from_consensus(784_027).unwrap()),
+        confirmations: utxos.get(0).unwrap().confirmations,
+        locktime: None,
+        address: None,
+        path: None,
+        coinbase: None,
+    };
+    assert_eq!(utxos.get(0).unwrap(), &expected_utxo);
+}
+
 fn addr_1() -> Address {
     "bc1qsej2fzpejkar82t8nyc2dhkvk54kn905vpvzpw"
         .parse()
