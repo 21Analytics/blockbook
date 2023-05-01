@@ -652,6 +652,13 @@ pub enum Currency {
     Zar,
 }
 
+fn maybe_block_height<'de, D>(deserializer: D) -> std::result::Result<Option<Height>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Ok(to_u32_option(deserializer)?.and_then(|h| Height::from_consensus(h).ok()))
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
@@ -663,8 +670,11 @@ pub struct Transaction {
     pub vout: Vec<Vout>,
     pub size: u32,
     pub vsize: u32,
-    pub block_hash: BlockHash,
-    pub block_height: Height,
+    /// `None` for unconfirmed transactions
+    pub block_hash: Option<BlockHash>,
+    /// `None` for unconfirmed transactions
+    #[serde(deserialize_with = "maybe_block_height")]
+    pub block_height: Option<Height>,
     pub confirmations: u32,
     pub block_time: Time,
     #[serde(with = "amount")]
