@@ -882,35 +882,64 @@ async fn test_utxos_from_address_ws() {
 
 #[ignore]
 #[tokio::test]
-async fn test_balance_history_ws() {
-    let mut client = blockbook_ws().await;
+async fn test_balance_history() {
+    let client = blockbook();
+    let mut ws_client = blockbook_ws().await;
     let address: Address = "399WojVNByUJZSuJDAKYJ8EQmbkDUgHuT6".parse().unwrap();
     let from = Time::from_consensus(1_676_000_000).unwrap();
     let to = Time::from_consensus(1_682_000_000).unwrap();
-    let history_1 = client
+    let group_by = 1_000_000;
+    let history_1 = ws_client
         .get_balance_history(
             address.clone(),
             Some(from),
             Some(to),
             Some(vec![Currency::Chf]),
-            Some(1_000_000),
+            Some(group_by),
         )
         .await
         .unwrap();
+    assert_eq!(
+        history_1,
+        client
+            .balance_history(
+                &address,
+                Some(from),
+                Some(to),
+                Some(Currency::Chf),
+                Some(group_by)
+            )
+            .await
+            .unwrap()
+    );
     assert_eq!(history_1.len(), 6);
     let tx_count_1: u32 = history_1.iter().map(|entry| entry.txs).sum();
     let received_count_1: Amount = history_1.iter().map(|entry| entry.received).sum();
 
-    let history_2 = client
+    let group_by = 2_000_000;
+    let history_2 = ws_client
         .get_balance_history(
-            address,
+            address.clone(),
             Some(from),
             Some(to),
             Some(vec![Currency::Chf]),
-            Some(2_000_000),
+            Some(group_by),
         )
         .await
         .unwrap();
+    assert_eq!(
+        history_2,
+        client
+            .balance_history(
+                &address,
+                Some(from),
+                Some(to),
+                Some(Currency::Chf),
+                Some(group_by)
+            )
+            .await
+            .unwrap()
+    );
     assert_eq!(history_2.len(), 3);
     let tx_count_2: u32 = history_2.iter().map(|entry| entry.txs).sum();
     let received_count_2 = history_2.iter().map(|entry| entry.received).sum();

@@ -102,7 +102,7 @@ enum OneOffResponse {
     CurrentFiatRates(FiatRates),
     AvailableCurrencies(super::TickersList),
     UtxosFromAddress(Vec<super::Utxo>),
-    BalanceHistory(Vec<BalanceHistory>),
+    BalanceHistory(Vec<super::BalanceHistory>),
     Transaction(super::Transaction),
 }
 
@@ -433,7 +433,7 @@ impl Client {
         to: Option<super::Time>,
         currencies: Option<Vec<super::Currency>>,
         group_by: Option<u32>,
-    ) -> Result<Vec<BalanceHistory>> {
+    ) -> Result<Vec<super::BalanceHistory>> {
         #[derive(serde::Serialize)]
         struct Params {
             descriptor: super::Address,
@@ -552,19 +552,5 @@ impl Client {
 pub struct FiatRates {
     #[serde(rename = "ts")]
     pub timestamp: u32,
-    pub rates: std::collections::HashMap<super::Currency, f64>,
-}
-
-#[derive(Debug, serde::Deserialize)]
-pub struct BalanceHistory {
-    pub time: super::Time,
-    pub txs: u32,
-    #[serde(with = "super::amount")]
-    pub received: super::Amount,
-    #[serde(with = "super::amount")]
-    pub sent: super::Amount,
-    #[serde(rename = "sentToSelf")]
-    #[serde(with = "super::amount")]
-    pub sent_to_self: super::Amount,
     pub rates: std::collections::HashMap<super::Currency, f64>,
 }

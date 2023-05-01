@@ -280,6 +280,38 @@ impl Blockbook {
         self.query::<Vec<Utxo>>(format!("/api/v2/utxo/{xpub}?confirmed={confirmed_only}"))
             .await
     }
+
+    // https://github.com/trezor/blockbook/blob/78cf3c264782e60a147031c6ae80b3ab1f704783/docs/api.md#balance-history
+    pub async fn balance_history(
+        &self,
+        address: &Address,
+        from: Option<Time>,
+        to: Option<Time>,
+        currency: Option<Currency>,
+        group_by: Option<u32>,
+    ) -> Result<Vec<BalanceHistory>> {
+        let mut query_pairs = url::form_urlencoded::Serializer::new(String::new());
+        if let Some(f) = from {
+            query_pairs.append_pair("from", &f.to_string());
+        }
+        if let Some(t) = to {
+            query_pairs.append_pair("to", &t.to_string());
+        }
+        if let Some(t) = currency {
+            query_pairs.append_pair(
+                "fiatcurrency",
+                serde_json::to_value(t).unwrap().as_str().unwrap(),
+            );
+        }
+        if let Some(gb) = group_by {
+            query_pairs.append_pair("groupBy", &gb.to_string());
+        }
+        self.query(format!(
+            "/api/v2/balancehistory/{address}?{}",
+            query_pairs.finish()
+        ))
+        .await
+    }
 }
 
 pub enum TxDetail {
@@ -794,6 +826,20 @@ pub enum ScriptPubKeyType {
     WitnessV1Taproot,
     #[serde(rename = "witness_unknown")]
     WitnessUnknown,
+}
+
+#[derive(Debug, PartialEq, serde::Deserialize)]
+pub struct BalanceHistory {
+    pub time: Time,
+    pub txs: u32,
+    #[serde(with = "amount")]
+    pub received: Amount,
+    #[serde(with = "amount")]
+    pub sent: Amount,
+    #[serde(rename = "sentToSelf")]
+    #[serde(with = "amount")]
+    pub sent_to_self: Amount,
+    pub rates: std::collections::HashMap<Currency, f64>,
 }
 
 #[cfg(test)]
