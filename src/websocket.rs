@@ -84,6 +84,9 @@ pub struct Block {
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 enum StreamingResponse {
     Block(Block),
+    FiatRates {
+        rates: std::collections::HashMap<super::Currency, f64>,
+    },
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -474,6 +477,39 @@ impl Client {
             result.and_then(|resp| {
                 if let Response::Streaming(StreamingResponse::Block(b)) = resp {
                     return Ok(b);
+                }
+                Err(Error::DataObjectMismatch)
+            })
+        })
+    }
+
+    /// If `None` is passed, all available fiat rates
+    /// will be returned on each update.
+    pub async fn subscribe_fiat_rates(
+        &mut self,
+        currency: Option<super::Currency>,
+    ) -> impl futures::stream::Stream<Item = Result<std::collections::HashMap<super::Currency, f64>>>
+    {
+        #[derive(serde::Serialize)]
+        struct Params {
+            currency: super::Currency,
+        }
+        let (tx, rx) = futures::channel::mpsc::channel(10);
+        self.jobs
+            .send(Job {
+                method: "subscribeFiatRates",
+                params: currency.map(|c| {
+                    Box::new(Params { currency: c })
+                        as Box<(dyn erased_serde::Serialize + std::marker::Send + Sync + 'static)>
+                }),
+                response_channel: tx,
+            })
+            .await
+            .unwrap();
+        rx.map(move |result| {
+            result.and_then(|resp| {
+                if let Response::Streaming(StreamingResponse::FiatRates { rates }) = resp {
+                    return Ok(rates);
                 }
                 Err(Error::DataObjectMismatch)
             })
