@@ -9,6 +9,7 @@ pub use bitcoin::util::address::Address;
 pub use bitcoin::util::amount::Amount;
 pub use bitcoin::util::bip32::DerivationPath;
 pub use bitcoin::Sequence;
+pub use bitcoin::Transaction as BitcoinTransaction;
 pub use reqwest::Error as ReqwestError;
 pub use url::ParseError;
 
@@ -311,6 +312,21 @@ impl Blockbook {
             query_pairs.finish()
         ))
         .await
+    }
+
+    // https://github.com/trezor/blockbook/blob/78cf3c264782e60a147031c6ae80b3ab1f704783/docs/api.md#send-transaction
+    pub async fn send_transaction(&self, tx: &bitcoin::Transaction) -> Result<Txid> {
+        #[derive(serde::Deserialize)]
+        struct Response {
+            result: Txid,
+        }
+        Ok(self
+            .query::<Response>(format!(
+                "/api/v2/sendtx/{}",
+                bitcoin::consensus::encode::serialize_hex(tx)
+            ))
+            .await?
+            .result)
     }
 }
 
