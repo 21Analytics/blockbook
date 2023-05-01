@@ -87,6 +87,10 @@ enum StreamingResponse {
     FiatRates {
         rates: std::collections::HashMap<super::Currency, f64>,
     },
+    Address {
+        address: super::Address,
+        tx: super::Transaction,
+    },
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -510,6 +514,33 @@ impl Client {
             result.and_then(|resp| {
                 if let Response::Streaming(StreamingResponse::FiatRates { rates }) = resp {
                     return Ok(rates);
+                }
+                Err(Error::DataObjectMismatch)
+            })
+        })
+    }
+
+    pub async fn subscribe_addresses(
+        &mut self,
+        addresses: Vec<super::Address>,
+    ) -> impl futures::stream::Stream<Item = Result<(super::Address, super::Transaction)>> {
+        #[derive(serde::Serialize)]
+        struct Params {
+            addresses: Vec<super::Address>,
+        }
+        let (tx, rx) = futures::channel::mpsc::channel(10);
+        self.jobs
+            .send(Job {
+                method: "subscribeAddresses",
+                params: Some(Box::new(Params { addresses })),
+                response_channel: tx,
+            })
+            .await
+            .unwrap();
+        rx.map(|result| {
+            result.and_then(|resp| {
+                if let Response::Streaming(StreamingResponse::Address { address, tx }) = resp {
+                    return Ok((address, tx));
                 }
                 Err(Error::DataObjectMismatch)
             })
