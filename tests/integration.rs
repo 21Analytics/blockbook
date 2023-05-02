@@ -853,6 +853,36 @@ async fn test_available_currencies() {
 
 #[ignore]
 #[tokio::test]
+async fn test_estimate_fee() {
+    let mut client = blockbook_ws().await;
+    let fees = client
+        .estimate_fee(vec![1, 2, 5, 10, 100, 1000])
+        .await
+        .unwrap();
+    let mut fees_cloned = fees.clone();
+    // should already be reverse-sorted
+    fees_cloned.sort_by(|a, b| b.cmp(a));
+    assert_eq!(fees, fees_cloned);
+    fees.iter().for_each(|f| assert!(f.to_sat() > 0));
+}
+
+#[ignore]
+#[tokio::test]
+async fn test_estimate_tx_fee() {
+    let mut client = blockbook_ws().await;
+    let fees = client
+        .estimate_tx_fee(vec![1, 2, 5, 10, 100, 1000], 600)
+        .await
+        .unwrap();
+    let mut fees_cloned = fees.clone();
+    // should already be reverse-sorted
+    fees_cloned.sort_by(|a, b| b.cmp(a));
+    assert_eq!(fees, fees_cloned);
+    fees.iter().for_each(|f| assert!(f.to_sat() > 0));
+}
+
+#[ignore]
+#[tokio::test]
 async fn test_utxos_from_address_ws() {
     let mut client = blockbook_ws().await;
     let utxos = client

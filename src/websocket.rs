@@ -105,6 +105,8 @@ enum OneOffResponse {
     BalanceHistory(Vec<super::BalanceHistory>),
     Transaction(super::Transaction),
     SendTransaction { result: super::Txid },
+    EstimateTxFee(Vec<EstimateTxFee>),
+    EstimateFee(Vec<EstimateFee>),
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -396,6 +398,71 @@ impl Client {
         })
     }
 
+    /// Returns the estimated fee for a set of target blocks
+    /// to wait. The returned unit is bitcoin per vByte.
+    pub async fn estimate_fee(&mut self, blocks: Vec<u16>) -> Result<Vec<super::Amount>> {
+        #[derive(serde::Serialize)]
+        struct Params {
+            blocks: Vec<u16>,
+        }
+
+        let (tx, mut rx) = futures::channel::mpsc::channel(1);
+        self.jobs
+            .send(Job {
+                method: "estimateFee",
+                params: Some(Box::new(Params { blocks })),
+                response_channel: tx,
+            })
+            .await
+            .unwrap();
+        rx.next().await.unwrap().and_then(|resp| {
+            if let Response::OneOff(OneOffResponse::EstimateFee(fees)) = resp {
+                // for unkonwon reasons, Blockbook returns fees in satoshis/vKB
+                return Ok(fees.into_iter().map(|f| f.fee_per_unit / 1000).collect());
+            }
+            Err(Error::DataObjectMismatch)
+        })
+    }
+
+    /// Returns the estimated total fee for a transaction of
+    /// the given size in bytes for a set of target blocks
+    /// to wait.
+    pub async fn estimate_tx_fee(
+        &mut self,
+        blocks: Vec<u16>,
+        tx_size: u32,
+    ) -> Result<Vec<super::Amount>> {
+        #[derive(serde::Serialize)]
+        struct Params {
+            blocks: Vec<u16>,
+            specific: Specific,
+        }
+        #[derive(serde::Serialize)]
+        struct Specific {
+            #[serde(rename = "txsize")]
+            tx_size: u32,
+        }
+
+        let (tx, mut rx) = futures::channel::mpsc::channel(1);
+        self.jobs
+            .send(Job {
+                method: "estimateFee",
+                params: Some(Box::new(Params {
+                    blocks,
+                    specific: Specific { tx_size },
+                })),
+                response_channel: tx,
+            })
+            .await
+            .unwrap();
+        rx.next().await.unwrap().and_then(|resp| {
+            if let Response::OneOff(OneOffResponse::EstimateTxFee(fees)) = resp {
+                return Ok(fees.into_iter().map(|f| f.fee_per_tx).collect());
+            }
+            Err(Error::DataObjectMismatch)
+        })
+    }
+
     pub async fn send_transaction(
         &mut self,
         transaction: &super::BitcoinTransaction,
@@ -581,4 +648,18 @@ pub struct FiatRates {
     #[serde(rename = "ts")]
     pub timestamp: u32,
     pub rates: std::collections::HashMap<super::Currency, f64>,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct EstimateFee {
+    #[serde(rename = "feePerUnit")]
+    #[serde(with = "super::amount")]
+    fee_per_unit: super::Amount,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct EstimateTxFee {
+    #[serde(rename = "feePerTx")]
+    #[serde(with = "super::amount")]
+    fee_per_tx: super::Amount,
 }
