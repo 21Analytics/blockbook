@@ -98,6 +98,7 @@ enum StreamingResponse {
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 enum OneOffResponse {
     Info(Info),
+    TransactionSpecific(super::TransactionSpecific),
     BlockHash { hash: super::BlockHash },
     CurrentFiatRates(FiatRates),
     AvailableCurrencies(super::TickersList),
@@ -392,6 +393,32 @@ impl Client {
             .unwrap();
         rx.next().await.unwrap().and_then(|resp| {
             if let Response::OneOff(OneOffResponse::Transaction(tx)) = resp {
+                return Ok(tx);
+            }
+            Err(Error::DataObjectMismatch)
+        })
+    }
+
+    pub async fn transaction_specific(
+        &mut self,
+        txid: super::Txid,
+    ) -> Result<super::TransactionSpecific> {
+        #[derive(serde::Serialize)]
+        struct Params {
+            txid: super::Txid,
+        }
+
+        let (tx, mut rx) = futures::channel::mpsc::channel(1);
+        self.jobs
+            .send(Job {
+                method: "getTransactionSpecific",
+                params: Some(Box::new(Params { txid })),
+                response_channel: tx,
+            })
+            .await
+            .unwrap();
+        rx.next().await.unwrap().and_then(|resp| {
+            if let Response::OneOff(OneOffResponse::TransactionSpecific(tx)) = resp {
                 return Ok(tx);
             }
             Err(Error::DataObjectMismatch)
