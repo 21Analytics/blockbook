@@ -863,6 +863,36 @@ async fn test_available_currencies() {
 
 #[ignore]
 #[tokio::test]
+async fn test_fiat_rates_for_timestamps() {
+    let mut client = blockbook_ws().await;
+    let tickers = client
+        .fiat_rates_for_timestamps(vec![Time::from_consensus(1_575_288_000).unwrap()], None)
+        .await
+        .unwrap();
+    assert_eq!(tickers.len(), 1);
+    let ticker = tickers.get(0).unwrap();
+    assert_eq!(ticker.timestamp, 1_575_331_200);
+    assert!(ticker.rates.contains_key(&Currency::Chf));
+    assert!(ticker.rates.contains_key(&Currency::Cad));
+    let tickers = client
+        .fiat_rates_for_timestamps(
+            vec![
+                Time::from_consensus(1_575_288_000).unwrap(),
+                Time::from_consensus(1_675_288_000).unwrap(),
+            ],
+            Some(vec![Currency::Chf, Currency::Usd]),
+        )
+        .await
+        .unwrap();
+    assert_eq!(tickers.len(), 2);
+    assert_eq!(tickers.get(0).unwrap().timestamp, 1_575_331_200);
+    assert_eq!(tickers.get(1).unwrap().timestamp, 1_675_296_000);
+    assert_eq!(tickers.get(0).unwrap().rates.len(), 2);
+    assert_eq!(tickers.get(1).unwrap().rates.len(), 2);
+}
+
+#[ignore]
+#[tokio::test]
 async fn test_estimate_fee() {
     let mut client = blockbook_ws().await;
     let fees = client

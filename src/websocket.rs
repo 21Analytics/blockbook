@@ -102,6 +102,7 @@ enum OneOffResponse {
     BlockHash { hash: super::BlockHash },
     CurrentFiatRates(FiatRates),
     AvailableCurrencies(super::TickersList),
+    FiatRatesAtTimestamps { tickers: Vec<FiatRates> },
     UtxosFromAddress(Vec<super::Utxo>),
     BalanceHistory(Vec<super::BalanceHistory>),
     Transaction(super::Transaction),
@@ -371,6 +372,37 @@ impl Client {
         rx.next().await.unwrap().and_then(|resp| {
             if let Response::OneOff(OneOffResponse::AvailableCurrencies(currencies)) = resp {
                 return Ok(currencies);
+            }
+            Err(Error::DataObjectMismatch)
+        })
+    }
+
+    pub async fn fiat_rates_for_timestamps(
+        &mut self,
+        timestamps: Vec<super::Time>,
+        currencies: Option<Vec<super::Currency>>,
+    ) -> Result<Vec<FiatRates>> {
+        #[derive(serde::Serialize)]
+        struct Params {
+            timestamps: Vec<super::Time>,
+            currencies: Option<Vec<super::Currency>>,
+        }
+
+        let (tx, mut rx) = futures::channel::mpsc::channel(1);
+        self.jobs
+            .send(Job {
+                method: "getFiatRatesForTimestamps",
+                params: Some(Box::new(Params {
+                    timestamps,
+                    currencies,
+                })),
+                response_channel: tx,
+            })
+            .await
+            .unwrap();
+        rx.next().await.unwrap().and_then(|resp| {
+            if let Response::OneOff(OneOffResponse::FiatRatesAtTimestamps { tickers }) = resp {
+                return Ok(tickers);
             }
             Err(Error::DataObjectMismatch)
         })
