@@ -79,7 +79,7 @@ impl Blockbook {
 
     // https://github.com/trezor/blockbook/blob/95eb699ccbaeef0ec6d8fd0486de3445b8405e8a/docs/api.md#status-page
     pub async fn status(&self) -> Result<Status> {
-        self.query::<Status>("/api/v2").await
+        self.query("/api/v2").await
     }
 
     // https://github.com/trezor/blockbook/blob/95eb699ccbaeef0ec6d8fd0486de3445b8405e8a/docs/api.md#get-block-hash
@@ -108,12 +108,12 @@ impl Blockbook {
 
     // https://github.com/trezor/blockbook/blob/86ff5a9538dba6b869f53850676f9edfc3cb5fa8/docs/api.md#get-block
     pub async fn block_by_height(&self, height: Height) -> Result<Block> {
-        self.query::<Block>(format!("/api/v2/block/{height}")).await
+        self.query(format!("/api/v2/block/{height}")).await
     }
 
     // https://github.com/trezor/blockbook/blob/86ff5a9538dba6b869f53850676f9edfc3cb5fa8/docs/api.md#get-block
     pub async fn block_by_hash(&self, hash: BlockHash) -> Result<Block> {
-        self.query::<Block>(format!("/api/v2/block/{hash}")).await
+        self.query(format!("/api/v2/block/{hash}")).await
     }
 
     // https://github.com/trezor/blockbook/blob/86ff5a9538dba6b869f53850676f9edfc3cb5fa8/docs/api.md#tickers-list
@@ -121,7 +121,7 @@ impl Blockbook {
     /// should be obtained from. The API will return a tickers list that is as
     /// close as possible to the specified timestamp.
     pub async fn tickers_list(&self, timestamp: Time) -> Result<TickersList> {
-        self.query::<TickersList>(format!("/api/v2/tickers-list/?timestamp={timestamp}"))
+        self.query(format!("/api/v2/tickers-list/?timestamp={timestamp}"))
             .await
     }
 
@@ -135,8 +135,7 @@ impl Blockbook {
         if let Some(ts) = timestamp {
             query_string.push_str(&format!("&timestamp={ts}"));
         }
-        self.query::<Ticker>(format!("/api/v2/tickers/{query_string}"))
-            .await
+        self.query(format!("/api/v2/tickers/{query_string}")).await
     }
 
     // https://github.com/trezor/blockbook/blob/86ff5a9538dba6b869f53850676f9edfc3cb5fa8/docs/api.md#tickers
@@ -146,7 +145,7 @@ impl Blockbook {
     /// None, the API will return the tickers with the latest available
     /// timestamp.
     pub async fn tickers(&self, timestamp: Option<Time>) -> Result<Ticker> {
-        self.query::<Ticker>(format!(
+        self.query(format!(
             "/api/v2/tickers/{}",
             timestamp.map_or(String::new(), |ts| format!("?timestamp={ts}"))
         ))
@@ -180,7 +179,7 @@ impl Blockbook {
         if let Some(currency) = also_in {
             query_pairs.append_pair("secondary", &format!("{currency:?}"));
         }
-        self.query::<AddressInfoBasic>(format!(
+        self.query(format!(
             "/api/v2/address/{address}?{}",
             query_pairs.finish()
         ))
@@ -189,8 +188,7 @@ impl Blockbook {
 
     // https://github.com/trezor/blockbook/blob/211aeff22d6f9ce59b26895883aa85905bba566b/docs/api.md#get-address
     pub async fn address_info(&self, address: &Address) -> Result<AddressInfo> {
-        self.query::<AddressInfo>(format!("/api/v2/address/{address}"))
-            .await
+        self.query(format!("/api/v2/address/{address}")).await
     }
 
     // https://github.com/trezor/blockbook/blob/211aeff22d6f9ce59b26895883aa85905bba566b/docs/api.md#get-address
@@ -219,7 +217,7 @@ impl Blockbook {
         if let Some(currency) = also_in {
             query_pairs.append_pair("secondary", &format!("{currency:?}"));
         }
-        self.query::<AddressInfo>(format!(
+        self.query(format!(
             "/api/v2/address/{address}?{}",
             query_pairs.finish()
         ))
@@ -259,7 +257,7 @@ impl Blockbook {
         if let Some(currency) = also_in {
             query_pairs.append_pair("secondary", &format!("{currency:?}"));
         }
-        self.query::<AddressInfoDetailed>(format!(
+        self.query(format!(
             "/api/v2/address/{address}?{}",
             query_pairs.finish()
         ))
@@ -272,13 +270,13 @@ impl Blockbook {
         address: Address,
         confirmed_only: bool,
     ) -> Result<Vec<Utxo>> {
-        self.query::<Vec<Utxo>>(format!("/api/v2/utxo/{address}?confirmed={confirmed_only}"))
+        self.query(format!("/api/v2/utxo/{address}?confirmed={confirmed_only}"))
             .await
     }
 
     // https://github.com/trezor/blockbook/blob/78cf3c264782e60a147031c6ae80b3ab1f704783/docs/api.md#get-utxo
     pub async fn utxos_from_xpub(&self, xpub: &str, confirmed_only: bool) -> Result<Vec<Utxo>> {
-        self.query::<Vec<Utxo>>(format!("/api/v2/utxo/{xpub}?confirmed={confirmed_only}"))
+        self.query(format!("/api/v2/utxo/{xpub}?confirmed={confirmed_only}"))
             .await
     }
 
@@ -352,7 +350,7 @@ impl Blockbook {
         if let Some(currency) = also_in {
             query_pairs.append_pair("secondary", &format!("{currency:?}"));
         }
-        self.query::<XPubInfoBasic>(format!("/api/v2/xpub/{xpub}?{}", query_pairs.finish()))
+        self.query(format!("/api/v2/xpub/{xpub}?{}", query_pairs.finish()))
             .await
     }
 
@@ -389,7 +387,7 @@ impl Blockbook {
         if let Some(currency) = also_in {
             query_pairs.append_pair("secondary", &format!("{currency:?}"));
         }
-        self.query::<XPubInfo>(format!("/api/v2/xpub/{xpub}?{}", query_pairs.finish()))
+        self.query(format!("/api/v2/xpub/{xpub}?{}", query_pairs.finish()))
             .await
     }
 }
