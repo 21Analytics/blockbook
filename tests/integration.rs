@@ -1049,6 +1049,13 @@ async fn test_address_info_specific_no_args() {
         &Txid::from_str("98f08111f08baba3d33af28c74facc223a07d868c0568258980119761dea441d")
             .unwrap()
     );
+    let mut websocket_info = blockbook_ws()
+        .await
+        .address_info_txids(addr_1(), None, None, None, None, None)
+        .await
+        .unwrap();
+    websocket_info.paging.items_on_page = address_info.paging.items_on_page;
+    assert_eq!(address_info, websocket_info);
 }
 
 fn counterparty_burner_addr() -> Address {
@@ -1081,6 +1088,19 @@ async fn test_address_info_specific_page() {
         &Txid::from_str("685623401c3f5e9d2eaaf0657a50454e56a270ee7630d409e98d3bc257560098")
             .unwrap(),
     );
+    let websocket_info = blockbook_ws()
+        .await
+        .address_info_txids(
+            address,
+            Some(std::num::NonZeroU32::new(number_of_txs).unwrap()),
+            Some(std::num::NonZeroU16::new(1).unwrap()),
+            None,
+            None,
+            None,
+        )
+        .await
+        .unwrap();
+    assert_eq!(address_info, websocket_info);
 }
 
 fn addr_2() -> Address {
@@ -1102,6 +1122,14 @@ async fn test_address_info_specific_blocks_basic() {
         .await
         .unwrap();
     assert_eq!(&address_info.address, &addr_2());
+    assert_eq!(
+        address_info,
+        blockbook_ws()
+            .await
+            .address_info_basic(addr_2(), Some(Currency::Usd))
+            .await
+            .unwrap()
+    );
 }
 
 #[ignore]
@@ -1153,6 +1181,20 @@ async fn test_address_info_specific_blocks() {
         ],
     };
     assert_eq!(address_info, expected_address_info);
+    let mut websocket_info = blockbook_ws()
+        .await
+        .address_info_txids(
+            addr_2(),
+            None,
+            None,
+            Some(Height::from_consensus(500_000).unwrap()),
+            Some(Height::from_consensus(503_000).unwrap()),
+            None,
+        )
+        .await
+        .unwrap();
+    websocket_info.paging.items_on_page = address_info.paging.items_on_page;
+    assert_eq!(address_info, websocket_info);
 }
 
 #[ignore]
@@ -1244,6 +1286,20 @@ async fn test_address_info_specific_blocks_details() {
         })],
     };
     assert_eq!(&address_info, &expected_address_info);
+    let mut websocket_info = blockbook_ws()
+        .await
+        .address_info_txs(
+            addr_2(),
+            None,
+            None,
+            Some(Height::from_consensus(501_000).unwrap()),
+            Some(Height::from_consensus(502_000).unwrap()),
+            Some(Currency::Zar),
+        )
+        .await
+        .unwrap();
+    websocket_info.paging.items_on_page = address_info.paging.items_on_page;
+    assert_eq!(websocket_info, expected_address_info);
 }
 
 #[ignore]
@@ -1390,11 +1446,33 @@ async fn test_address_info_block_and_pagesize_filter_combination() {
         .await
         .unwrap();
     assert_eq!(address_info.paging.total_pages, None);
+    let mut websocket_info = blockbook_ws()
+        .await
+        .address_info_txids(
+            counterparty_burner_addr(),
+            None,
+            Some(std::num::NonZeroU16::new(1).unwrap()),
+            Some(Height::from_consensus(600_000).unwrap()),
+            Some(Height::from_consensus(700_000).unwrap()),
+            None,
+        )
+        .await
+        .unwrap();
+    websocket_info.paging.items_on_page = address_info.paging.items_on_page;
+    assert_eq!(address_info, websocket_info);
+
     let address_info = blockbook()
         .address_info_specific(&xpub_addr(), None, None, None, None, None)
         .await
         .unwrap();
     assert_eq!(address_info.paging.total_pages, Some(1));
+    let mut websocket_info = blockbook_ws()
+        .await
+        .address_info_txids(xpub_addr(), None, None, None, None, None)
+        .await
+        .unwrap();
+    websocket_info.paging.items_on_page = address_info.paging.items_on_page;
+    assert_eq!(address_info, websocket_info);
 }
 
 #[ignore]

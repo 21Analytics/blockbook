@@ -103,6 +103,9 @@ enum OneOffResponse {
     CurrentFiatRates(FiatRates),
     AvailableCurrencies(super::TickersList),
     FiatRatesAtTimestamps { tickers: Vec<FiatRates> },
+    AddressInfoTxs(super::AddressInfoDetailed),
+    AddressInfoTxIds(super::AddressInfo),
+    AddressInfoBasic(super::AddressInfoBasic),
     UtxosFromAddress(Vec<super::Utxo>),
     BalanceHistory(Vec<super::BalanceHistory>),
     Transaction(super::Transaction),
@@ -403,6 +406,130 @@ impl Client {
         rx.next().await.unwrap().and_then(|resp| {
             if let Response::OneOff(OneOffResponse::FiatRatesAtTimestamps { tickers }) = resp {
                 return Ok(tickers);
+            }
+            Err(Error::DataObjectMismatch)
+        })
+    }
+
+    pub async fn address_info_basic(
+        &mut self,
+        address: super::Address,
+        also_in: Option<super::Currency>,
+    ) -> Result<super::AddressInfoBasic> {
+        #[derive(serde::Serialize)]
+        #[serde(rename_all = "camelCase")]
+        struct Params {
+            descriptor: super::Address,
+            secondary_currency: Option<super::Currency>,
+        }
+
+        let (tx, mut rx) = futures::channel::mpsc::channel(1);
+        self.jobs
+            .send(Job {
+                method: "getAccountInfo",
+                params: Some(Box::new(Params {
+                    descriptor: address,
+                    secondary_currency: also_in,
+                })),
+                response_channel: tx,
+            })
+            .await
+            .unwrap();
+        rx.next().await.unwrap().and_then(|resp| {
+            if let Response::OneOff(OneOffResponse::AddressInfoBasic(info)) = resp {
+                return Ok(info);
+            }
+            Err(Error::DataObjectMismatch)
+        })
+    }
+
+    pub async fn address_info_txids(
+        &mut self,
+        address: super::Address,
+        page: Option<std::num::NonZeroU32>,
+        pagesize: Option<std::num::NonZeroU16>,
+        from: Option<super::Height>,
+        to: Option<super::Height>,
+        also_in: Option<super::Currency>,
+    ) -> Result<super::AddressInfo> {
+        #[derive(serde::Serialize)]
+        #[serde(rename_all = "camelCase")]
+        struct Params {
+            descriptor: super::Address,
+            details: String,
+            page: Option<std::num::NonZeroU32>,
+            page_size: Option<std::num::NonZeroU16>,
+            from: Option<super::Height>,
+            to: Option<super::Height>,
+            secondary_currency: Option<super::Currency>,
+        }
+
+        let (tx, mut rx) = futures::channel::mpsc::channel(1);
+        self.jobs
+            .send(Job {
+                method: "getAccountInfo",
+                params: Some(Box::new(Params {
+                    descriptor: address,
+                    details: "txids".into(),
+                    page,
+                    page_size: pagesize,
+                    from,
+                    to,
+                    secondary_currency: also_in,
+                })),
+                response_channel: tx,
+            })
+            .await
+            .unwrap();
+        rx.next().await.unwrap().and_then(|resp| {
+            if let Response::OneOff(OneOffResponse::AddressInfoTxIds(info)) = resp {
+                return Ok(info);
+            }
+            Err(Error::DataObjectMismatch)
+        })
+    }
+
+    pub async fn address_info_txs(
+        &mut self,
+        address: super::Address,
+        page: Option<std::num::NonZeroU32>,
+        pagesize: Option<std::num::NonZeroU16>,
+        from: Option<super::Height>,
+        to: Option<super::Height>,
+        also_in: Option<super::Currency>,
+    ) -> Result<super::AddressInfoDetailed> {
+        #[derive(serde::Serialize)]
+        #[serde(rename_all = "camelCase")]
+        struct Params {
+            descriptor: super::Address,
+            details: String,
+            page: Option<std::num::NonZeroU32>,
+            page_size: Option<std::num::NonZeroU16>,
+            from: Option<super::Height>,
+            to: Option<super::Height>,
+            secondary_currency: Option<super::Currency>,
+        }
+
+        let (tx, mut rx) = futures::channel::mpsc::channel(1);
+        self.jobs
+            .send(Job {
+                method: "getAccountInfo",
+                params: Some(Box::new(Params {
+                    descriptor: address,
+                    details: "txs".into(),
+                    page,
+                    page_size: pagesize,
+                    from,
+                    to,
+                    secondary_currency: also_in,
+                })),
+                response_channel: tx,
+            })
+            .await
+            .unwrap();
+        rx.next().await.unwrap().and_then(|resp| {
+            if let Response::OneOff(OneOffResponse::AddressInfoTxs(info)) = resp {
+                return Ok(info);
             }
             Err(Error::DataObjectMismatch)
         })
