@@ -1067,7 +1067,7 @@ fn counterparty_burner_addr() -> Address {
 async fn test_address_info_specific_page() {
     let address = counterparty_burner_addr();
     let number_of_txs = blockbook()
-        .address_info_specific_basic(&address, None, None, None, None, None)
+        .address_info_specific_basic(&address, None)
         .await
         .unwrap()
         .txs;
@@ -1111,14 +1111,7 @@ fn addr_2() -> Address {
 #[tokio::test]
 async fn test_address_info_specific_blocks_basic() {
     let address_info = blockbook()
-        .address_info_specific_basic(
-            &addr_2(),
-            None,
-            None,
-            Some(&Height::from_consensus(500_000).unwrap()),
-            Some(&Height::from_consensus(503_000).unwrap()),
-            Some(&Currency::Usd),
-        )
+        .address_info_specific_basic(&addr_2(), Some(&Currency::Usd))
         .await
         .unwrap();
     assert_eq!(&address_info.address, &addr_2());

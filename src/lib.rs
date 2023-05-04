@@ -156,26 +156,10 @@ impl Blockbook {
     pub async fn address_info_specific_basic(
         &self,
         address: &Address,
-        page: Option<&std::num::NonZeroU32>,
-        pagesize: Option<&std::num::NonZeroU16>,
-        from: Option<&Height>,
-        to: Option<&Height>,
         also_in: Option<&Currency>,
     ) -> Result<AddressInfoBasic> {
         let mut query_pairs = url::form_urlencoded::Serializer::new(String::new());
         query_pairs.append_pair("details", "basic");
-        if let Some(p) = page {
-            query_pairs.append_pair("page", &p.to_string());
-        }
-        if let Some(ps) = pagesize {
-            query_pairs.append_pair("pageSize", &ps.to_string());
-        }
-        if let Some(start_block) = from {
-            query_pairs.append_pair("from", &start_block.to_string());
-        }
-        if let Some(end_block) = to {
-            query_pairs.append_pair("to", &end_block.to_string());
-        }
         if let Some(currency) = also_in {
             query_pairs.append_pair("secondary", &format!("{currency:?}"));
         }
