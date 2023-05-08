@@ -131,11 +131,13 @@ impl Blockbook {
     /// to the specified timestamp. If the timestamp parameter is None, the
     /// API will return the ticker with the latest available timestamp.
     pub async fn ticker(&self, currency: Currency, timestamp: Option<Time>) -> Result<Ticker> {
-        let mut query_string = format!("?currency={currency:?}");
+        let mut query_pairs = url::form_urlencoded::Serializer::new(String::new());
+        query_pairs.append_pair("currency", &format!("{currency:?}"));
         if let Some(ts) = timestamp {
-            query_string.push_str(&format!("&timestamp={ts}"));
+            query_pairs.append_pair("timestamp", &ts.to_string());
         }
-        self.query(format!("/api/v2/tickers/{query_string}")).await
+        self.query(format!("/api/v2/tickers?{}", query_pairs.finish()))
+            .await
     }
 
     // https://github.com/trezor/blockbook/blob/86ff5a9538dba6b869f53850676f9edfc3cb5fa8/docs/api.md#tickers
