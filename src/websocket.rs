@@ -707,6 +707,8 @@ impl Client {
     /// The `group_by` parameter sets the interval length (in seconds)
     /// over which transactions are consolidated into [`BalanceHistory`]
     /// entries. Defaults to 3600s.
+    ///
+    /// [`BalanceHistory`]: crate::BalanceHistory
     pub async fn get_balance_history(
         &mut self,
         address: super::Address,

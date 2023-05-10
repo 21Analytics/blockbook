@@ -213,8 +213,8 @@ impl Blockbook {
     // https://github.com/trezor/blockbook/blob/211aeff22d6f9ce59b26895883aa85905bba566b/docs/api.md#get-address
     /// The `details` parameter specifies how much information should
     /// be returned for the transactions in question:
-    /// - [`Tx::TxsLight`]: A list of abbreviated transaction information
-    /// - [`Tx::Txs`]: A list of detailed transaction information
+    /// - [`TxDetail::Light`]: A list of abbreviated transaction information
+    /// - [`TxDetail::Full`]: A list of detailed transaction information
     #[allow(clippy::too_many_arguments)]
     pub async fn address_info_specific_detailed(
         &self,
@@ -594,8 +594,7 @@ pub struct BlockVin {
     /// Can be `None` or multiple addresses for a non-standard script,
     /// where the latter indicates a multisig input
     pub addresses: Option<Vec<Address>>,
-    /// Indicates a standard script, See:
-    /// https://github.com/trezor/blockbook/blob/0ebbf16f18551f1c73b59bec6cfcbbdc96ec47e8/bchain/coins/btc/bitcoinlikeparser.go#L193-L194
+    /// Indicates a [standard script](https://github.com/trezor/blockbook/blob/0ebbf16f18551f1c73b59bec6cfcbbdc96ec47e8/bchain/coins/btc/bitcoinlikeparser.go#L193-L194)
     pub is_address: bool,
     #[serde(with = "amount")]
     pub value: Amount,
