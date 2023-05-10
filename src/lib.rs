@@ -1,17 +1,22 @@
 pub mod websocket;
 
-pub use bitcoin::blockdata::locktime::{Height, PackedLockTime, Time};
-pub use bitcoin::blockdata::script::Script;
-pub use bitcoin::blockdata::witness::Witness;
-pub use bitcoin::hash_types::{BlockHash, TxMerkleNode, Txid, Wtxid};
-pub use bitcoin::hashes;
-pub use bitcoin::util::address::Address;
-pub use bitcoin::util::amount::Amount;
-pub use bitcoin::util::bip32::DerivationPath;
-pub use bitcoin::Sequence;
-pub use bitcoin::Transaction as BitcoinTransaction;
-pub use reqwest::Error as ReqwestError;
-pub use url::ParseError;
+mod external {
+    pub use bitcoin::blockdata::locktime::{Height, PackedLockTime, Time};
+    pub use bitcoin::blockdata::script::Script;
+    pub use bitcoin::blockdata::witness::Witness;
+    pub use bitcoin::hash_types::{BlockHash, TxMerkleNode, Txid, Wtxid};
+    pub use bitcoin::hashes;
+    pub use bitcoin::util::address::Address;
+    pub use bitcoin::util::amount::Amount;
+    pub use bitcoin::util::bip32::DerivationPath;
+    pub use bitcoin::Sequence;
+    pub use bitcoin::Transaction as BitcoinTransaction;
+    pub use reqwest::Error as ReqwestError;
+    pub use url::ParseError;
+}
+
+#[doc(hidden)]
+pub use external::*;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
