@@ -96,14 +96,13 @@ impl Blockbook {
     }
 
     // https://github.com/trezor/blockbook/blob/95eb699ccbaeef0ec6d8fd0486de3445b8405e8a/docs/api.md#get-transaction
-    pub async fn transaction(&self, txid: impl AsRef<str>) -> Result<Transaction> {
-        self.query(format!("/api/v2/tx/{}", txid.as_ref())).await
+    pub async fn transaction(&self, txid: Txid) -> Result<Transaction> {
+        self.query(format!("/api/v2/tx/{txid}")).await
     }
 
     // https://github.com/trezor/blockbook/blob/95eb699ccbaeef0ec6d8fd0486de3445b8405e8a/docs/api.md#get-transaction-specific
-    pub async fn transaction_specific(&self, txid: impl AsRef<str>) -> Result<TransactionSpecific> {
-        self.query(format!("/api/v2/tx-specific/{}", txid.as_ref()))
-            .await
+    pub async fn transaction_specific(&self, txid: Txid) -> Result<TransactionSpecific> {
+        self.query(format!("/api/v2/tx-specific/{txid}")).await
     }
 
     // https://github.com/trezor/blockbook/blob/86ff5a9538dba6b869f53850676f9edfc3cb5fa8/docs/api.md#get-block

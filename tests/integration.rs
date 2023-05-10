@@ -65,9 +65,10 @@ async fn test_block_hash() {
 #[ignore]
 #[tokio::test]
 async fn test_tx() {
-    let txid = "b0714235addd08daf83b979aa35cc9ed7558efb8327b86b4d3ccacd8b0482ae1";
+    let txid = "b0714235addd08daf83b979aa35cc9ed7558efb8327b86b4d3ccacd8b0482ae1"
+        .parse()
+        .unwrap();
     let tx = blockbook().transaction(txid).await.unwrap();
-    let txid: Txid = txid.parse().unwrap();
     let expected_tx = Transaction {
         txid,
         version: 2,
@@ -165,7 +166,11 @@ async fn test_tx() {
 #[tokio::test]
 async fn test_lock_time() {
     let tx = blockbook()
-        .transaction("bd99f123432e23aa8b88af0e9f701a4d6c8f0638dc133a14c7ccf57fb06596ac")
+        .transaction(
+            "bd99f123432e23aa8b88af0e9f701a4d6c8f0638dc133a14c7ccf57fb06596ac"
+                .parse()
+                .unwrap(),
+        )
         .await
         .unwrap();
     assert_eq!(tx.lock_time, Some(Height::from_consensus(777_536).unwrap()));
@@ -175,7 +180,11 @@ async fn test_lock_time() {
 #[tokio::test]
 async fn test_sequence() {
     let tx = blockbook()
-        .transaction("bd99f123432e23aa8b88af0e9f701a4d6c8f0638dc133a14c7ccf57fb06596ac")
+        .transaction(
+            "bd99f123432e23aa8b88af0e9f701a4d6c8f0638dc133a14c7ccf57fb06596ac"
+                .parse()
+                .unwrap(),
+        )
         .await
         .unwrap();
     assert_eq!(
@@ -183,7 +192,11 @@ async fn test_sequence() {
         Some(Sequence(4_294_967_293))
     );
     let tx = blockbook()
-        .transaction("c8d7b00135b9bd03055a8f47851eafae747b759b4608bd9f35e85b3285185679")
+        .transaction(
+            "c8d7b00135b9bd03055a8f47851eafae747b759b4608bd9f35e85b3285185679"
+                .parse()
+                .unwrap(),
+        )
         .await
         .unwrap();
     assert_eq!(tx.vin.get(0).unwrap().sequence, None);
@@ -193,9 +206,10 @@ async fn test_sequence() {
 #[ignore]
 #[tokio::test]
 async fn test_tx_specific() {
-    let txid = "b0714235addd08daf83b979aa35cc9ed7558efb8327b86b4d3ccacd8b0482ae1";
+    let txid = "b0714235addd08daf83b979aa35cc9ed7558efb8327b86b4d3ccacd8b0482ae1"
+        .parse()
+        .unwrap();
     let tx = blockbook().transaction_specific(txid).await.unwrap();
-    let txid = txid.parse().unwrap();
     let expected_tx = TransactionSpecific {
         txid,
         version: 2,
@@ -316,15 +330,18 @@ async fn test_tx_specific() {
 #[ignore]
 #[tokio::test]
 async fn test_tx_specific_pre_segwit() {
+    #![allow(clippy::similar_names)]
     let txid = "0c5cb51f39ecb826cd477d94576abde1d2b6ef1b2e0ac7b9cea5d5ab28aba902";
+    let wtxid = txid.parse().unwrap();
+    let txid = txid.parse().unwrap();
     let tx = blockbook().transaction_specific(txid).await.unwrap();
     let expected_tx = TransactionSpecific {
-        txid: txid.parse().unwrap(),
+        txid,
         version: 1,
         script: "01000000013cdefb50d22666b59b24f047b019e09a2c077ad0fb8febda33a5e0bad45990e2000000006a47304402202015dfc5b5d9030f9538c1f6e0b99fe8dbf46260044e45ad2f883744292af09b0220066353c0d19f9734278ba7072fa8b3ba1c1c30bdd583721439b8ee375a098ad8012103de2010f23c4eda698d373cfc8f7ecd576fbb4e40f67a8634ac007bb4b80a4fd4ffffffff01e62e1900000000001976a914029f45cefe259733c9d860b70f7a8385596607bf88ac00000000"
             .parse()
             .unwrap(),
-        wtxid: txid.parse().unwrap(),
+        wtxid,
         size: 191,
         time: Time::from_consensus(1_513_622_125).unwrap(),
         vsize: 191,
