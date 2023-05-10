@@ -507,7 +507,7 @@ impl Blockbook {
     ///
     /// If the underlying network request fails, if the server returns a
     /// non-success response, or if the response body is of unexpected format.
-    pub async fn send_transaction(&self, tx: &bitcoin::Transaction) -> Result<Txid> {
+    pub async fn send_transaction(&self, tx: &BitcoinTransaction) -> Result<Txid> {
         #[derive(serde::Deserialize)]
         struct Response {
             result: Txid,
