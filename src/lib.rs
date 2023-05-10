@@ -1,4 +1,52 @@
-pub mod websocket;
+//! # Rust Blockbook Library
+//!
+//! This crate provides REST and WebSocket clients to query various
+//! information from a Blockbook server, which is a block explorer
+//! backend [created and maintained](https://github.com/trezor/blockbook)
+//! by SatoshiLabs.
+//!
+//! Note that this crate currently only exposes a Bitcoin-specific API,
+//! even though Blockbook provides a unified API that supports
+//! [multiple cryptocurrencies](https://github.com/trezor/blockbook#implemented-coins).
+//!
+//! The methods exposed in this crate make extensive use of types from the
+//! [`bitcoin`](https://crates.io/crates/bitcoin) crate to provide strongly typed APIs.
+//!
+//! An example of how to use the [`REST client`]:
+//!
+//! ```ignore
+//! # tokio_test::block_on(async {
+//! # let url = format!("https://{}", std::env::var("BLOCKBOOK_SERVER").unwrap()).parse().unwrap();
+//! let client = blockbook::Blockbook::new(url);
+//!
+//! // query the Genesis block hash
+//! let genesis_hash = client
+//!     .block_hash(blockbook::Height::from_consensus(0).unwrap())
+//!     .await?;
+//! assert_eq!(
+//!     genesis_hash.to_string(),
+//!     "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"
+//! );
+//!
+//! // query the full block
+//! let genesis = client.block_by_hash(genesis_hash).await?;
+//! assert_eq!(genesis.previous_block_hash, None);
+//!
+//! // inspect the first coinbase transaction
+//! let tx = genesis.txs.get(0).unwrap();
+//! assert!((tx.vout.get(0).unwrap().value.to_btc() - 50.0).abs() < f64::EPSILON);
+//! # Ok::<_,blockbook::Error>(())
+//! # });
+//! ```
+//!
+//! For an example of how to use the WebSocket client, see [`its documentation`].
+//!
+//! ## Supported Blockbook Version
+//!
+//! The currently supported Blockbook version is [`0.4.0`](https://github.com/trezor/blockbook/releases/tag/v0.4.0).
+//!
+//! [`REST client`]: Blockbook
+//! [`its documentation`]: websocket::Client
 
 mod external {
     pub use bitcoin::address::Address;
@@ -19,9 +67,15 @@ mod external {
 #[doc(hidden)]
 pub use external::*;
 
+/// The WebSocket client.
+pub mod websocket;
+
+/// The errors emitted by this crate.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    /// An error during a network request.
     RequestError(reqwest::Error),
+    /// An error while parsing a URL.
     UrlError(url::ParseError),
 }
 
@@ -48,12 +102,24 @@ impl From<url::ParseError> for Error {
     }
 }
 
+/// A REST client that can query a Blockbook server.
+///
+/// Provides a set methods that allow strongly typed
+/// access to the APIs available from a Blockbook server.
+///
+/// See the [`module documentation`] for some concrete examples
+/// of how to use call these APIs.
+///
+/// [`module documentation`]: crate
 pub struct Blockbook {
     base_url: url::Url,
     client: reqwest::Client,
 }
 
 impl Blockbook {
+    /// Constructs a new client for a given server `base_url`.
+    ///
+    /// `base_url` should not contain the `/api/v2/` path fragment.
     pub fn new(base_url: url::Url) -> Self {
         let mut headers = reqwest::header::HeaderMap::new();
         headers.insert(
@@ -83,12 +149,22 @@ impl Blockbook {
             .await?)
     }
 
-    // https://github.com/trezor/blockbook/blob/95eb699ccbaeef0ec6d8fd0486de3445b8405e8a/docs/api.md#status-page
+    /// Queries [information](https://github.com/trezor/blockbook/blob/95eb699ccbaeef0ec6d8fd0486de3445b8405e8a/docs/api.md#status-page) about the Blockbook server status.
+    ///
+    /// # Errors
+    ///
+    /// If the underlying network request fails, if the server returns a
+    /// non-success response, or if the response body is of unexpected format.
     pub async fn status(&self) -> Result<Status> {
         self.query("/api/v2").await
     }
 
-    // https://github.com/trezor/blockbook/blob/95eb699ccbaeef0ec6d8fd0486de3445b8405e8a/docs/api.md#get-block-hash
+    /// Retrieves the [`BlockHash`] of a block of the given `height`.
+    ///
+    /// # Errors
+    ///
+    /// If the underlying network request fails, if the server returns a
+    /// non-success response, or if the response body is of unexpected format.
     pub async fn block_hash(&self, height: Height) -> Result<BlockHash> {
         #[derive(serde::Deserialize)]
         #[serde(rename_all = "camelCase")]
@@ -101,40 +177,74 @@ impl Blockbook {
             .block_hash)
     }
 
-    // https://github.com/trezor/blockbook/blob/95eb699ccbaeef0ec6d8fd0486de3445b8405e8a/docs/api.md#get-transaction
+    /// Retrieves [information](https://github.com/trezor/blockbook/blob/95eb699ccbaeef0ec6d8fd0486de3445b8405e8a/docs/api.md#get-transaction)
+    /// about a transaction with a given `txid`.
+    ///
+    /// # Errors
+    ///
+    /// If the underlying network request fails, if the server returns a
+    /// non-success response, or if the response body is of unexpected format.
     pub async fn transaction(&self, txid: Txid) -> Result<Transaction> {
         self.query(format!("/api/v2/tx/{txid}")).await
     }
 
-    // https://github.com/trezor/blockbook/blob/95eb699ccbaeef0ec6d8fd0486de3445b8405e8a/docs/api.md#get-transaction-specific
+    /// Retrieves [information](https://github.com/trezor/blockbook/blob/95eb699ccbaeef0ec6d8fd0486de3445b8405e8a/docs/api.md#get-transaction-specific)
+    /// about a transaction with a given `txid` as reported by the Bitcoin Core backend.
+    ///
+    /// # Errors
+    ///
+    /// If the underlying network request fails, if the server returns a
+    /// non-success response, or if the response body is of unexpected format.
     pub async fn transaction_specific(&self, txid: Txid) -> Result<TransactionSpecific> {
         self.query(format!("/api/v2/tx-specific/{txid}")).await
     }
 
-    // https://github.com/trezor/blockbook/blob/86ff5a9538dba6b869f53850676f9edfc3cb5fa8/docs/api.md#get-block
+    /// Retrieves [information](https://github.com/trezor/blockbook/blob/86ff5a9538dba6b869f53850676f9edfc3cb5fa8/docs/api.md#get-block)
+    /// about a block of the specified `height`.
+    ///
+    /// # Errors
+    ///
+    /// If the underlying network request fails, if the server returns a
+    /// non-success response, or if the response body is of unexpected format.
     pub async fn block_by_height(&self, height: Height) -> Result<Block> {
         self.query(format!("/api/v2/block/{height}")).await
     }
 
-    // https://github.com/trezor/blockbook/blob/86ff5a9538dba6b869f53850676f9edfc3cb5fa8/docs/api.md#get-block
+    /// Retrieves [information](https://github.com/trezor/blockbook/blob/86ff5a9538dba6b869f53850676f9edfc3cb5fa8/docs/api.md#get-block)
+    /// about a block with the specified `hash`.
+    ///
+    /// # Errors
+    ///
+    /// If the underlying network request fails, if the server returns a
+    /// non-success response, or if the response body is of unexpected format.
     pub async fn block_by_hash(&self, hash: BlockHash) -> Result<Block> {
         self.query(format!("/api/v2/block/{hash}")).await
     }
 
-    // https://github.com/trezor/blockbook/blob/86ff5a9538dba6b869f53850676f9edfc3cb5fa8/docs/api.md#tickers-list
-    /// The timestamp parameter specifies the point in time the tickers list
-    /// should be obtained from. The API will return a tickers list that is as
-    /// close as possible to the specified timestamp.
+    /// Retrieves a list of available price tickers close to a given `timestamp`.
+    ///
+    /// The API will return a tickers list that is as close as possible
+    /// to the specified `timestamp`.
+    ///
+    /// # Errors
+    ///
+    /// If the underlying network request fails, if the server returns a
+    /// non-success response, or if the response body is of unexpected format.
     pub async fn tickers_list(&self, timestamp: Time) -> Result<TickersList> {
         self.query(format!("/api/v2/tickers-list/?timestamp={timestamp}"))
             .await
     }
 
-    // https://github.com/trezor/blockbook/blob/86ff5a9538dba6b869f53850676f9edfc3cb5fa8/docs/api.md#tickers
-    /// The timestamp parameter specifies the point in time the ticker should be
-    /// obtained from. The API will return a ticker that is as close as possible
-    /// to the specified timestamp. If the timestamp parameter is None, the
-    /// API will return the ticker with the latest available timestamp.
+    /// Retrieves the exchange rate for a given `currency`.
+    ///
+    /// The API will return a ticker that is as close as possible to the provided
+    /// `timestamp`. If `timestamp` is `None`, the latest available ticker will be
+    /// returned.
+    ///
+    /// # Errors
+    ///
+    /// If the underlying network request fails, if the server returns a
+    /// non-success response, or if the response body is of unexpected format.
     pub async fn ticker(&self, currency: Currency, timestamp: Option<Time>) -> Result<Ticker> {
         let mut query_pairs = url::form_urlencoded::Serializer::new(String::new());
         query_pairs.append_pair("currency", &format!("{currency:?}"));
@@ -145,12 +255,16 @@ impl Blockbook {
             .await
     }
 
-    // https://github.com/trezor/blockbook/blob/86ff5a9538dba6b869f53850676f9edfc3cb5fa8/docs/api.md#tickers
-    /// The timestamp parameter specifies the point in time the tickers should
-    /// be obtained from. The API will return the tickers that are as close as
-    /// possible to the specified timestamp. If the timestamp parameter is
-    /// None, the API will return the tickers with the latest available
-    /// timestamp.
+    /// Retrieves the exchange rates for all available currencies.
+    ///
+    /// The API will return tickers that are as close as possible to the provided
+    /// `timestamp`. If `timestamp` is `None`, the latest available tickers will be
+    /// returned.
+    ///
+    /// # Errors
+    ///
+    /// If the underlying network request fails, if the server returns a
+    /// non-success response, or if the response body is of unexpected format.
     pub async fn tickers(&self, timestamp: Option<Time>) -> Result<Ticker> {
         self.query(format!(
             "/api/v2/tickers/{}",
@@ -159,7 +273,15 @@ impl Blockbook {
         .await
     }
 
-    // https://github.com/trezor/blockbook/blob/211aeff22d6f9ce59b26895883aa85905bba566b/docs/api.md#get-address
+    /// Retrieves [basic aggregated information](https://github.com/trezor/blockbook/blob/211aeff22d6f9ce59b26895883aa85905bba566b/docs/api.md#get-address)
+    /// about a provided `address`.
+    ///
+    /// If an `also_in` [`Currency`] is specified, the total balance will also be returned in terms of that currency.
+    ///
+    /// # Errors
+    ///
+    /// If the underlying network request fails, if the server returns a
+    /// non-success response, or if the response body is of unexpected format.
     pub async fn address_info_specific_basic(
         &self,
         address: &Address,
@@ -177,12 +299,33 @@ impl Blockbook {
         .await
     }
 
-    // https://github.com/trezor/blockbook/blob/211aeff22d6f9ce59b26895883aa85905bba566b/docs/api.md#get-address
+    /// Retrieves [basic aggregated information](https://github.com/trezor/blockbook/blob/211aeff22d6f9ce59b26895883aa85905bba566b/docs/api.md#get-address)
+    /// as well as a list of [`Txid`]s for a given `address`.
+    ///
+    /// The [`txids`] field of the response will be paged if the `address` was
+    /// involved in many transactions. In this case, use [`address_info_specific`]
+    /// to control the pagination.
+    ///
+    /// [`txids`]: AddressInfo::txids
+    /// [`address_info_specific`]: Blockbook::address_info_specific
+    ///
+    /// # Errors
+    ///
+    /// If the underlying network request fails, if the server returns a
+    /// non-success response, or if the response body is of unexpected format.
     pub async fn address_info(&self, address: &Address) -> Result<AddressInfo> {
         self.query(format!("/api/v2/address/{address}")).await
     }
 
-    // https://github.com/trezor/blockbook/blob/211aeff22d6f9ce59b26895883aa85905bba566b/docs/api.md#get-address
+    /// Retrieves [basic aggregated information](https://github.com/trezor/blockbook/blob/211aeff22d6f9ce59b26895883aa85905bba566b/docs/api.md#get-address)
+    /// as well as a paginated list of [`Txid`]s for a given `address`.
+    ///
+    /// If an `also_in` [`Currency`] is specified, the total balance will also be returned in terms of that currency.
+    ///
+    /// # Errors
+    ///
+    /// If the underlying network request fails, if the server returns a
+    /// non-success response, or if the response body is of unexpected format.
     pub async fn address_info_specific(
         &self,
         address: &Address,
@@ -215,11 +358,18 @@ impl Blockbook {
         .await
     }
 
-    // https://github.com/trezor/blockbook/blob/211aeff22d6f9ce59b26895883aa85905bba566b/docs/api.md#get-address
+    /// Retrieves [basic aggregated information](https://github.com/trezor/blockbook/blob/211aeff22d6f9ce59b26895883aa85905bba566b/docs/api.md#get-address)
+    /// as well as a paginated list of [`Tx`] objects for a given `address`.
+    ///
     /// The `details` parameter specifies how much information should
     /// be returned for the transactions in question:
-    /// - [`TxDetail::Light`]: A list of abbreviated transaction information
-    /// - [`TxDetail::Full`]: A list of detailed transaction information
+    /// - [`TxDetail::Light`]: A list of [`Tx::Light`] abbreviated transaction information
+    /// - [`TxDetail::Full`]: A list of [`Tx::Ordinary`] detailed transaction information
+    ///
+    /// # Errors
+    ///
+    /// If the underlying network request fails, if the server returns a
+    /// non-success response, or if the response body is of unexpected format.
     #[allow(clippy::too_many_arguments)]
     pub async fn address_info_specific_detailed(
         &self,
@@ -255,7 +405,13 @@ impl Blockbook {
         .await
     }
 
-    // https://github.com/trezor/blockbook/blob/78cf3c264782e60a147031c6ae80b3ab1f704783/docs/api.md#get-utxo
+    /// Retrieves [information](https://github.com/trezor/blockbook/blob/78cf3c264782e60a147031c6ae80b3ab1f704783/docs/api.md#get-utxo)
+    /// about unspent transaction outputs (UTXOs) that a given address controls.
+    ///
+    /// # Errors
+    ///
+    /// If the underlying network request fails, if the server returns a
+    /// non-success response, or if the response body is of unexpected format.
     pub async fn utxos_from_address(
         &self,
         address: Address,
@@ -265,13 +421,41 @@ impl Blockbook {
             .await
     }
 
-    // https://github.com/trezor/blockbook/blob/78cf3c264782e60a147031c6ae80b3ab1f704783/docs/api.md#get-utxo
+    /// Retrieves [information](https://github.com/trezor/blockbook/blob/78cf3c264782e60a147031c6ae80b3ab1f704783/docs/api.md#get-utxo)
+    /// about unspent transaction outputs (UTXOs) that are controlled by addresses that
+    /// can be derived from the given [`extended public key`].
+    ///
+    /// For details of how Blockbook attempts to derive addresses, see the
+    /// [`xpub_info_basic`] documentation.
+    ///
+    /// # Errors
+    ///
+    /// If the underlying network request fails, if the server returns a
+    /// non-success response, or if the response body is of unexpected format.
+    ///
+    /// [`extended public key`]: bitcoin::bip32::ExtendedPubKey
+    /// [`xpub_info_basic`]: Blockbook::xpub_info_basic
     pub async fn utxos_from_xpub(&self, xpub: &str, confirmed_only: bool) -> Result<Vec<Utxo>> {
         self.query(format!("/api/v2/utxo/{xpub}?confirmed={confirmed_only}"))
             .await
     }
 
-    // https://github.com/trezor/blockbook/blob/78cf3c264782e60a147031c6ae80b3ab1f704783/docs/api.md#balance-history
+    /// Retrieves a paginated list of [information](https://github.com/trezor/blockbook/blob/78cf3c264782e60a147031c6ae80b3ab1f704783/docs/api.md#balance-history)
+    /// about the balance history of a given `address`.
+    ///
+    /// If a `currency` is specified, contemporary exchange rates
+    /// will be included for each balance history event.
+    ///
+    /// The history can be aggregated into chunks of time of a desired
+    /// length by specifiying a `group_by` interval in seconds.
+    ///
+    /// # Errors
+    ///
+    /// If the underlying network request fails, if the server returns a
+    /// non-success response, or if the response body is of unexpected format.
+    ///
+    /// [`extended public key`]: bitcoin::bip32::ExtendedPubKey
+    /// [`xpub_info_basic`]: Blockbook::xpub_info_basic
     pub async fn balance_history(
         &self,
         address: &Address,
@@ -303,7 +487,26 @@ impl Blockbook {
         .await
     }
 
-    // https://github.com/trezor/blockbook/blob/78cf3c264782e60a147031c6ae80b3ab1f704783/docs/api.md#send-transaction
+    /// Broadcasts a transaction to the network, returning its [`Txid`].
+    ///
+    /// If you already have a serialized transaction, you can use this
+    /// API as follows:
+    /// ```no_run
+    /// # tokio_test::block_on(async {
+    /// # let raw_tx = vec![0_u8];
+    /// # let client = blockbook::Blockbook::new("dummy:".parse().unwrap());
+    /// // Assuming you have a hex serialization of a transaction:
+    /// // let raw_tx = hex::decode(raw_tx_hex).unwrap();
+    /// let tx: bitcoin::Transaction = bitcoin::consensus::deserialize(&raw_tx).unwrap();
+    /// client.send_transaction(&tx).await?;
+    /// # Ok::<_,blockbook::Error>(())
+    /// # });
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// If the underlying network request fails, if the server returns a
+    /// non-success response, or if the response body is of unexpected format.
     pub async fn send_transaction(&self, tx: &bitcoin::Transaction) -> Result<Txid> {
         #[derive(serde::Deserialize)]
         struct Response {
@@ -318,7 +521,30 @@ impl Blockbook {
             .result)
     }
 
-    // https://github.com/trezor/blockbook/blob/211aeff22d6f9ce59b26895883aa85905bba566b/docs/api.md#get-xpub
+    /// Retrieves [information](https://github.com/trezor/blockbook/blob/211aeff22d6f9ce59b26895883aa85905bba566b/docs/api.md#get-xpub)
+    /// about the funds held by addresses from public keys derivable from an [`extended public key`].
+    ///
+    /// See the above link for more information about how the Blockbook server will
+    /// try to derive public keys and addresses from the extended public key.
+    /// Briefly, the extended key is expected to be derived at `m/purpose'/coin_type'/account'`,
+    /// and Blockbook will derive `change` and `index` levels below that, subject to a
+    /// gap limit of unused indices.
+    ///
+    /// In addition to the aggregated amounts, per-address indicators can
+    /// also be retrieved (Blockbook calls them `tokens`) by setting
+    /// `include_token_list`. The [`AddressFilter`] enum then allows selecting
+    /// the addresses holding a balance, addresses having been used, or all
+    /// addresses.
+    ///
+    /// If an `also_in` [`Currency`] is specified, the total balance will also be returned
+    /// in terms of that currency.
+    ///
+    /// # Errors
+    ///
+    /// If the underlying network request fails, if the server returns a
+    /// non-success response, or if the response body is of unexpected format.
+    ///
+    /// [`extended public key`]: bitcoin::bip32::ExtendedPubKey
     pub async fn xpub_info_basic(
         &self,
         xpub: &str,
@@ -345,7 +571,23 @@ impl Blockbook {
             .await
     }
 
-    // https://github.com/trezor/blockbook/blob/211aeff22d6f9ce59b26895883aa85905bba566b/docs/api.md#get-xpub
+    /// Retrieves [information](https://github.com/trezor/blockbook/blob/211aeff22d6f9ce59b26895883aa85905bba566b/docs/api.md#get-xpub)
+    /// about the funds held by addresses from public keys derivable from an [`extended public key`],
+    /// as well as a paginated list of [`Txid`]s or [`Transaction`]s that affect addresses derivable from
+    /// the extended public key.
+    ///
+    /// [`Txid`]s or [`Transaction`]s are included in the returned [`XPubInfo`] based
+    /// on whether `entire_txs` is set to `false` or `true` respectively.
+    ///
+    /// For the other arguments, see the documentation of [`xpub_info_basic`].
+    ///
+    /// # Errors
+    ///
+    /// If the underlying network request fails, if the server returns a
+    /// non-success response, or if the response body is of unexpected format.
+    ///
+    /// [`extended public key`]: bitcoin::bip32::ExtendedPubKey
+    /// [`xpub_info_basic`]: Blockbook::xpub_info_basic
     #[allow(clippy::too_many_arguments)]
     pub async fn xpub_info(
         &self,
@@ -383,6 +625,9 @@ impl Blockbook {
     }
 }
 
+/// Aggregated information about funds held in addresses derivable from an [`extended public key`].
+///
+/// [`extended public key`]: bitcoin::bip32::ExtendedPubKey
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
@@ -403,6 +648,9 @@ pub struct XPubInfoBasic {
     pub tokens: Option<Vec<Token>>,
 }
 
+/// Information about funds at a Bitcoin address derived from an [`extended public key`].
+///
+/// [`extended public key`]: bitcoin::bip32::ExtendedPubKey
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Token {
@@ -421,6 +669,9 @@ pub struct Token {
     pub total_sent: Amount,
 }
 
+/// Detailed information about funds held in addresses derivable from an [`extended public key`],
+///
+/// [`extended public key`]: bitcoin::bip32::ExtendedPubKey
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
@@ -433,6 +684,10 @@ pub struct XPubInfo {
     pub transactions: Option<Vec<Transaction>>,
 }
 
+/// Used to select which addresses to consider when deriving from
+/// [`extended public keys`].
+///
+/// [`extended public keys`]: bitcoin::bip32::ExtendedPubKey
 pub enum AddressFilter {
     NonZero,
     Used,
@@ -449,6 +704,9 @@ impl AddressFilter {
     }
 }
 
+/// Used to select the level of detail for [`address info`] transactions.
+///
+/// [`address info`]: Blockbook::address_info_specific_detailed
 pub enum TxDetail {
     Light,
     Full,
@@ -471,6 +729,7 @@ where
     Ok(u32::try_from(value).ok())
 }
 
+/// Paging information.
 #[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AddressInfoPaging {
@@ -483,6 +742,7 @@ pub struct AddressInfoPaging {
     pub items_on_page: u32,
 }
 
+/// Address information that includes a list of involved transactions.
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AddressInfoDetailed {
@@ -493,6 +753,7 @@ pub struct AddressInfoDetailed {
     pub transactions: Vec<Tx>,
 }
 
+/// Address information that includes a list of involved transaction IDs.
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AddressInfo {
@@ -535,6 +796,7 @@ where
     Ok(helper_option.map(|helper| helper.0))
 }
 
+/// Information about the funds moved from or to an address.
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AddressInfoBasic {
@@ -553,6 +815,7 @@ pub struct AddressInfoBasic {
     pub secondary_value: Option<f64>,
 }
 
+/// The variants for the transactions contained in [`AddressInfoDetailed::transactions`].
 #[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(untagged)]
 pub enum Tx {
@@ -560,6 +823,7 @@ pub enum Tx {
     Light(BlockTransaction),
 }
 
+/// Information about an unspent transaction outputs.
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 pub struct Utxo {
@@ -578,6 +842,7 @@ pub struct Utxo {
     pub path: Option<DerivationPath>,
 }
 
+/// A timestamp and a set of exchange rates for multiple currencies.
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 pub struct Ticker {
@@ -586,6 +851,7 @@ pub struct Ticker {
     pub rates: std::collections::HashMap<Currency, f64>,
 }
 
+/// Information about a block.
 #[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 #[serde(rename_all = "camelCase")]
@@ -609,6 +875,7 @@ pub struct Block {
     pub txs: Vec<BlockTransaction>,
 }
 
+/// Information about a transaction.
 #[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 #[serde(rename_all = "camelCase")]
@@ -641,6 +908,7 @@ where
     Ok(helper_option.map(|helper| helper.0))
 }
 
+/// Information about a transaction input.
 #[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BlockVin {
@@ -656,6 +924,7 @@ pub struct BlockVin {
     pub value: Amount,
 }
 
+/// Information about a transaction output.
 #[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BlockVout {
@@ -668,6 +937,9 @@ pub struct BlockVout {
     pub is_address: bool,
 }
 
+/// Either an address or an [`OP_RETURN output`].
+///
+/// [`OP_RETURN output`]: OpReturn
 #[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(untagged)]
 pub enum AddressBlockVout {
@@ -676,15 +948,18 @@ pub enum AddressBlockVout {
     OpReturn(OpReturn),
 }
 
+/// An `OP_RETURN` output.
 #[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct OpReturn(pub String);
 
+/// A cryptocurrency asset.
 #[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 #[non_exhaustive]
 pub enum Asset {
     Bitcoin,
 }
 
+/// Status and backend information of the Blockbook server.
 #[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 pub struct Status {
@@ -692,6 +967,7 @@ pub struct Status {
     pub backend: Backend,
 }
 
+/// Status information of the Blockbook server.
 #[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
@@ -721,6 +997,7 @@ pub struct StatusBlockbook {
     pub historical_fiat_rates_time: chrono::DateTime<chrono::Utc>,
 }
 
+/// The specific chain (mainnet, testnet, ...).
 #[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 #[non_exhaustive]
 pub enum Chain {
@@ -728,6 +1005,7 @@ pub enum Chain {
     Main,
 }
 
+/// Information about the full node backing the Blockbook server.
 #[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
@@ -794,6 +1072,7 @@ mod amount {
     }
 }
 
+/// Information about the available exchange rates at a given timestamp.
 #[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 pub struct TickersList {
@@ -802,6 +1081,7 @@ pub struct TickersList {
     pub available_currencies: Vec<Currency>,
 }
 
+/// The supported currencies.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "lowercase")]
 #[non_exhaustive]
@@ -876,6 +1156,7 @@ where
     Ok(to_u32_option(deserializer)?.and_then(|h| Height::from_consensus(h).ok()))
 }
 
+/// Information about a transaction.
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
@@ -917,6 +1198,7 @@ where
     Ok(helper_vector.into_iter().map(|helper| helper.0).collect())
 }
 
+/// Information about a transaction input.
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Vin {
@@ -931,6 +1213,7 @@ pub struct Vin {
     pub value: Amount,
 }
 
+/// Information about a transaction output.
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Vout {
@@ -945,6 +1228,7 @@ pub struct Vout {
     pub is_address: bool,
 }
 
+/// Detailed information about a transaction input.
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 pub struct TransactionSpecific {
@@ -966,6 +1250,7 @@ pub struct TransactionSpecific {
     pub weight: u32,
 }
 
+/// Bitcoin-specific information about a transaction input.
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 pub struct VinSpecific {
@@ -978,6 +1263,7 @@ pub struct VinSpecific {
     pub vout: u32,
 }
 
+/// A script fulfilling spending conditions.
 #[derive(Clone, Debug, Default, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 pub struct ScriptSig {
@@ -986,6 +1272,7 @@ pub struct ScriptSig {
     pub script: ScriptBuf,
 }
 
+/// Bitcoin-specific information about a transaction output.
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
@@ -996,6 +1283,7 @@ pub struct VoutSpecific {
     pub value: Amount,
 }
 
+/// A script specifying spending conditions.
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 pub struct ScriptPubKey {
@@ -1008,6 +1296,7 @@ pub struct ScriptPubKey {
     pub r#type: ScriptPubKeyType,
 }
 
+/// The type of spending condition.
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "lowercase")]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
@@ -1029,6 +1318,7 @@ pub enum ScriptPubKeyType {
     WitnessUnknown,
 }
 
+/// A balance history entry.
 #[derive(Debug, PartialEq, serde::Deserialize)]
 pub struct BalanceHistory {
     pub time: Time,
