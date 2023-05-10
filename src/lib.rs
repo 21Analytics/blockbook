@@ -83,7 +83,7 @@ impl Blockbook {
     }
 
     // https://github.com/trezor/blockbook/blob/95eb699ccbaeef0ec6d8fd0486de3445b8405e8a/docs/api.md#get-block-hash
-    pub async fn block_hash(&self, height: u32) -> Result<BlockHash> {
+    pub async fn block_hash(&self, height: Height) -> Result<BlockHash> {
         #[derive(serde::Deserialize)]
         #[serde(rename_all = "camelCase")]
         struct BlockHashObject {

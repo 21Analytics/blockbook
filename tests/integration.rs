@@ -48,7 +48,10 @@ async fn test_status() {
 #[ignore]
 #[tokio::test]
 async fn test_block_hash() {
-    let hash = blockbook().block_hash(763_672).await.unwrap();
+    let hash = blockbook()
+        .block_hash(Height::from_consensus(763_672).unwrap())
+        .await
+        .unwrap();
     assert_eq!(
         hash.as_ref(),
         [
