@@ -791,7 +791,7 @@ impl Client {
             })
             .await
             .unwrap();
-        rx.map(move |result| {
+        rx.map(|result| {
             result.and_then(|resp| {
                 if let Response::Streaming(StreamingResponse::FiatRates { rates }) = resp {
                     return Ok(rates);
