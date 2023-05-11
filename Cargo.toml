@@ -1,11 +1,15 @@
 [package]
 name = "blockbook"
 version = "0.1.0"
-authors = ["21Analytics <info@21analytics.ch>"]
+authors = ["21 Analytics <info@21analytics.ch>"]
 edition = "2021"
-license = "MIT OR Apache-2.0"
+license = "MIT"
 description = "A robust and blazing fast blockbook blockexporer client"
+documentation = "https://docs.rs/blockbook/"
+homepage = "https://21analytics.ch"
+repository = "https://gitlab.com/21analytics/blockbook"
 keywords = ["crypto", "bitcoin", "blockexplorer", "blockbook", "client"]
+categories = ["api-bindings"]
 
 [dependencies]
 bitcoin = { version = "0.30", default-features = false, features = [ "std", "serde" ] }
