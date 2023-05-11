@@ -101,9 +101,9 @@ enum OneOffResponse {
     Info(Info),
     TransactionSpecific(super::TransactionSpecific),
     BlockHash { hash: super::BlockHash },
-    CurrentFiatRates(FiatRates),
+    CurrentFiatRates(super::Ticker),
     AvailableCurrencies(super::TickersList),
-    FiatRatesAtTimestamps { tickers: Vec<FiatRates> },
+    FiatRatesAtTimestamps { tickers: Vec<super::Ticker> },
     AddressInfoTxs(super::AddressInfoDetailed),
     AddressInfoTxIds(super::AddressInfo),
     AddressInfoBasic(super::AddressInfoBasic),
@@ -328,7 +328,7 @@ impl Client {
     pub async fn get_current_fiat_rates(
         &mut self,
         currencies: Vec<super::Currency>,
-    ) -> Result<FiatRates> {
+    ) -> Result<super::Ticker> {
         #[derive(serde::Serialize)]
         struct Params {
             currencies: Vec<super::Currency>,
@@ -385,7 +385,7 @@ impl Client {
         &mut self,
         timestamps: Vec<super::Time>,
         currencies: Option<Vec<super::Currency>>,
-    ) -> Result<Vec<FiatRates>> {
+    ) -> Result<Vec<super::Ticker>> {
         #[derive(serde::Serialize)]
         struct Params {
             timestamps: Vec<super::Time>,
@@ -830,13 +830,6 @@ impl Client {
             })
         })
     }
-}
-
-#[derive(Debug, serde::Deserialize)]
-pub struct FiatRates {
-    #[serde(rename = "ts")]
-    pub timestamp: u32,
-    pub rates: std::collections::HashMap<super::Currency, f64>,
 }
 
 #[derive(Debug, serde::Deserialize)]
