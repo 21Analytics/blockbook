@@ -12,7 +12,7 @@
 //!
 //! // query the Genesis block hash
 //! let genesis_hash = client
-//!     .get_blockhash(blockbook::Height::from_consensus(0).unwrap())
+//!     .block_hash(blockbook::Height::from_consensus(0).unwrap())
 //!     .await?;
 //! assert_eq!(
 //!     genesis_hash.to_string(),
@@ -358,7 +358,7 @@ impl Client {
     ///
     /// If the WebSocket connection was closed or emitted an error, or if the
     /// response body is of unexpected format.
-    pub async fn get_info(&mut self) -> Result<Info> {
+    pub async fn info(&mut self) -> Result<Info> {
         let (tx, mut rx) = futures::channel::mpsc::channel(1);
         self.jobs
             .send(Job {
@@ -382,7 +382,7 @@ impl Client {
     ///
     /// If the WebSocket connection was closed or emitted an error, or if the
     /// response body is of unexpected format.
-    pub async fn get_blockhash(&mut self, height: super::Height) -> Result<super::BlockHash> {
+    pub async fn block_hash(&mut self, height: super::Height) -> Result<super::BlockHash> {
         #[derive(serde::Serialize)]
         struct Params {
             height: super::Height,
@@ -414,7 +414,7 @@ impl Client {
     ///
     /// If the WebSocket connection was closed or emitted an error, or if the
     /// response body is of unexpected format.
-    pub async fn get_current_fiat_rates(
+    pub async fn current_fiat_rates(
         &mut self,
         currencies: Vec<super::Currency>,
     ) -> Result<super::Ticker> {
@@ -447,10 +447,7 @@ impl Client {
     ///
     /// If the WebSocket connection was closed or emitted an error, or if the
     /// response body is of unexpected format.
-    pub async fn get_available_currencies(
-        &mut self,
-        time: super::Time,
-    ) -> Result<super::TickersList> {
+    pub async fn available_currencies(&mut self, time: super::Time) -> Result<super::TickersList> {
         #[derive(serde::Serialize)]
         struct Params {
             time: u32,
@@ -849,7 +846,7 @@ impl Client {
     ///
     /// If the WebSocket connection was closed or emitted an error, or if the
     /// response body is of unexpected format.
-    pub async fn get_utxos_from_address(
+    pub async fn utxos_from_address(
         &mut self,
         address: super::Address,
     ) -> Result<Vec<super::Utxo>> {
@@ -887,7 +884,7 @@ impl Client {
     ///
     /// If the WebSocket connection was closed or emitted an error, or if the
     /// response body is of unexpected format.
-    pub async fn get_balance_history(
+    pub async fn balance_history(
         &mut self,
         address: super::Address,
         from: Option<super::Time>,

@@ -858,8 +858,8 @@ async fn test_ticker() {
 
 #[ignore]
 #[tokio::test]
-async fn test_get_info_ws() {
-    let info = blockbook_ws().await.get_info().await.unwrap();
+async fn test_info_ws() {
+    let info = blockbook_ws().await.info().await.unwrap();
     let expected_info = Info {
         name: "Bitcoin".into(),
         shortcut: "BTC".into(),
@@ -881,11 +881,11 @@ async fn test_get_info_ws() {
 
 #[ignore]
 #[tokio::test]
-async fn test_get_blockhash_ws() {
+async fn test_block_hash_ws() {
     assert_eq!(
         blockbook_ws()
             .await
-            .get_blockhash(Height::from_consensus(500_044).unwrap())
+            .block_hash(Height::from_consensus(500_044).unwrap())
             .await
             .unwrap()
             .to_string(),
@@ -895,10 +895,10 @@ async fn test_get_blockhash_ws() {
 
 #[ignore]
 #[tokio::test]
-async fn test_get_current_fiat_rates() {
+async fn test_current_fiat_rates() {
     let mut client = blockbook_ws().await;
     let rates = client
-        .get_current_fiat_rates(vec![Currency::Btc, Currency::Chf])
+        .current_fiat_rates(vec![Currency::Btc, Currency::Chf])
         .await
         .unwrap()
         .rates;
@@ -911,7 +911,7 @@ async fn test_get_current_fiat_rates() {
 async fn test_available_currencies() {
     let mut client = blockbook_ws().await;
     let tickers = client
-        .get_available_currencies(Time::from_consensus(1_682_415_368).unwrap())
+        .available_currencies(Time::from_consensus(1_682_415_368).unwrap())
         .await
         .unwrap()
         .available_currencies;
@@ -990,7 +990,7 @@ async fn test_estimate_tx_fee() {
 async fn test_utxos_from_address_ws() {
     let mut client = blockbook_ws().await;
     let utxos = client
-        .get_utxos_from_address(
+        .utxos_from_address(
             "bc1q5au2nmza9pmplnvgzyd4ky7egu2wya56qa024u"
                 .parse::<Address<NetworkUnchecked>>()
                 .unwrap()
@@ -1028,7 +1028,7 @@ async fn test_balance_history() {
     let to = Time::from_consensus(1_682_000_000).unwrap();
     let group_by = 1_000_000;
     let history_1 = ws_client
-        .get_balance_history(
+        .balance_history(
             address.clone(),
             Some(from),
             Some(to),
@@ -1056,7 +1056,7 @@ async fn test_balance_history() {
 
     let group_by = 2_000_000;
     let history_2 = ws_client
-        .get_balance_history(
+        .balance_history(
             address.clone(),
             Some(from),
             Some(to),
