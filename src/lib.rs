@@ -70,7 +70,7 @@ pub use external::*;
 /// The WebSocket client.
 pub mod websocket;
 
-/// The errors emitted by this crate.
+/// The errors emitted by the REST client.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// An error during a network request.

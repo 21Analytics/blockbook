@@ -1,14 +1,72 @@
-pub use serde_json::Error as SerdeJsonError;
-pub use tokio_tungstenite::tungstenite::Error as TungsteniteError;
+//! This module contains the WebSocket [`Client`] for interacting with
+//! a Blockbook server via a WebSocket connection. The client provides
+//! numerous query-response methods, as well as a few subscription
+//! methods.
+//!
+//! An example of how to use it to make single queries:
+//!
+//! ```ignore
+//! # tokio_test::block_on(async {
+//! # let url = format!("wss://{}/websocket", std::env::var("BLOCKBOOK_SERVER").unwrap()).parse().unwrap();
+//! let mut client = blockbook::websocket::Client::new(url).await?;
+//!
+//! // query the Genesis block hash
+//! let genesis_hash = client
+//!     .get_blockhash(blockbook::Height::from_consensus(0).unwrap())
+//!     .await?;
+//! assert_eq!(
+//!     genesis_hash.to_string(),
+//!     "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"
+//! );
+//!
+//! // query the first ever non-coinbase Bitcoin transaction from Satoshi to Hal Finney
+//! let txid = "f4184fc596403b9d638783cf57adfe4c75c605f6356fbc91338530e9831e9e16".parse().unwrap();
+//! let tx = client.transaction(txid).await?;
+//! assert!((tx.vout.get(0).unwrap().value.to_btc() - 10.0).abs() < f64::EPSILON);
+//! # Ok::<_,blockbook::websocket::Error>(())
+//! # });
+//! ```
+//!
+//! An example of how to use it for subscriptions:
+//!
+//! ```no_run
+//! # tokio_test::block_on(async {
+//! # let url = format!("wss://{}/websocket", std::env::var("BLOCKBOOK_SERVER").unwrap()).parse().unwrap();
+//! use futures::StreamExt;
+//!
+//! let mut client = blockbook::websocket::Client::new(url).await?;
+//! let mut blocks = client.subscribe_blocks().await;
+//!
+//!  while let Some(Ok(block)) = blocks.next().await {
+//!     println!("received block {}", block.height);
+//! }
+//! # Ok::<_,blockbook::websocket::Error>(())
+//! # });
+//! ```
+//!
+//! [`Client`]: crate::websocket::Client
+
+mod external {
+    pub use serde_json::Error as SerdeJsonError;
+    pub use tokio_tungstenite::tungstenite::Error as TungsteniteError;
+}
+
+#[doc(hidden)]
+pub use external::*;
 
 use futures::{SinkExt, StreamExt};
 
+/// The errors emitted by the WebSocket client.
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum Error {
+    /// An unexpected response format was encountered.
     DataObjectMismatch,
+    /// Blockbook indicated an unsuccessful subscription attempt.
     SubscriptionFailed,
+    /// The WebSocket connection was closed.
     WebsocketClosed,
+    /// A WebSocket error.
     WebsocketError(std::sync::Arc<tokio_tungstenite::tungstenite::Error>),
 }
 
@@ -42,6 +100,7 @@ impl std::fmt::Display for Error {
 
 type Result<T> = std::result::Result<T, Error>;
 
+/// Information about the full node backing the Blockbook server and the chain state.
 #[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
@@ -57,6 +116,7 @@ pub struct Info {
     pub backend: Backend,
 }
 
+/// Version information about the full node.
 #[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 pub struct Backend {
@@ -64,6 +124,7 @@ pub struct Backend {
     pub subversion: String,
 }
 
+/// Information about a block.
 #[derive(Debug, serde::Deserialize)]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 pub struct Block {
@@ -138,6 +199,12 @@ struct Job {
     response_channel: futures::channel::mpsc::Sender<Result<Response>>,
 }
 
+/// A WebSocket client for querying and subscribing to information
+/// from a Blockbook server.
+///
+/// See the [`module documentation`] for an example of how to use it.
+///
+/// [`module documentation`]: crate::websocket
 pub struct Client {
     jobs: futures::channel::mpsc::Sender<Job>,
     shutdown: Option<tokio::sync::oneshot::Sender<()>>,
@@ -152,6 +219,13 @@ impl Drop for Client {
 }
 
 impl Client {
+    /// Constructs a new client for a given server `url`.
+    ///
+    /// `url` must contain the `/websocket` path fragment.
+    ///
+    /// # Errors
+    ///
+    /// If the WebSocket connection could not be established.
     pub async fn new(url: url::Url) -> Result<Self> {
         let stream = tokio_tungstenite::connect_async(url)
             .await
@@ -278,6 +352,12 @@ impl Client {
         }
     }
 
+    /// Retrieves information about the full node backing the Blockbook server and the chain state.
+    ///
+    /// # Errors
+    ///
+    /// If the WebSocket connection was closed or emitted an error, or if the
+    /// response body is of unexpected format.
     pub async fn get_info(&mut self) -> Result<Info> {
         let (tx, mut rx) = futures::channel::mpsc::channel(1);
         self.jobs
@@ -296,6 +376,12 @@ impl Client {
         })
     }
 
+    /// Retrieves a block hash of a block at a given `height`.
+    ///
+    /// # Errors
+    ///
+    /// If the WebSocket connection was closed or emitted an error, or if the
+    /// response body is of unexpected format.
     pub async fn get_blockhash(&mut self, height: super::Height) -> Result<super::BlockHash> {
         #[derive(serde::Serialize)]
         struct Params {
@@ -319,6 +405,15 @@ impl Client {
         })
     }
 
+    /// Retrieves the current exchange rates for a list of given currencies.
+    ///
+    /// If no `currencies` are specified, all available exchange rates will
+    /// be returned.
+    ///
+    /// # Errors
+    ///
+    /// If the WebSocket connection was closed or emitted an error, or if the
+    /// response body is of unexpected format.
     pub async fn get_current_fiat_rates(
         &mut self,
         currencies: Vec<super::Currency>,
@@ -347,6 +442,11 @@ impl Client {
 
     /// Uses the provided timestamp and returns the closest available
     /// timestamp and a list of available currencies at that timestamp.
+    ///
+    /// # Errors
+    ///
+    /// If the WebSocket connection was closed or emitted an error, or if the
+    /// response body is of unexpected format.
     pub async fn get_available_currencies(
         &mut self,
         time: super::Time,
@@ -375,6 +475,15 @@ impl Client {
         })
     }
 
+    /// Retrieves exchange rates at a number of provided `timestamps`.
+    ///
+    /// If no `currencies` are specified, all available exchange rates
+    /// will be returned at each timestamp.
+    ///
+    /// # Errors
+    ///
+    /// If the WebSocket connection was closed or emitted an error, or if the
+    /// response body is of unexpected format.
     pub async fn fiat_rates_for_timestamps(
         &mut self,
         timestamps: Vec<super::Time>,
@@ -406,6 +515,16 @@ impl Client {
         })
     }
 
+    /// Retrieves basic aggregated information about a provided `address`.
+    ///
+    /// If an `also_in` [`Currency`] is specified, the total balance will also be returned in terms of that currency.
+    ///
+    /// [`Currency`]: super::Currency
+    ///
+    /// # Errors
+    ///
+    /// If the WebSocket connection was closed or emitted an error, or if the
+    /// response body is of unexpected format.
     pub async fn address_info_basic(
         &mut self,
         address: super::Address,
@@ -438,6 +557,19 @@ impl Client {
         })
     }
 
+    /// Retrieves basic aggregated information as well as a paginated list of [`Txid`]s
+    /// for a given `address`.
+    ///
+    /// If an `also_in` [`Currency`] is specified, the total balance will also be returned
+    /// in terms of that currency.
+    ///
+    /// [`Txid`]: super::Txid
+    /// [`Currency`]: super::Currency
+    ///
+    /// # Errors
+    ///
+    /// If the WebSocket connection was closed or emitted an error, or if the
+    /// response body is of unexpected format.
     pub async fn address_info_txids(
         &mut self,
         address: super::Address,
@@ -484,6 +616,15 @@ impl Client {
         })
     }
 
+    /// Retrieves basic aggregated information as well as a paginated list
+    /// of [`Tx`] objects for a given `address`.
+    ///
+    /// [`Tx`]: super::Tx
+    ///
+    /// # Errors
+    ///
+    /// If the WebSocket connection was closed or emitted an error, or if the
+    /// response body is of unexpected format.
     pub async fn address_info_txs(
         &mut self,
         address: super::Address,
@@ -530,6 +671,12 @@ impl Client {
         })
     }
 
+    /// Retrieves information about a transaction with the given `txid`.
+    ///
+    /// # Errors
+    ///
+    /// If the WebSocket connection was closed or emitted an error, or if the
+    /// response body is of unexpected format.
     pub async fn transaction(&mut self, txid: super::Txid) -> Result<super::Transaction> {
         #[derive(serde::Serialize)]
         struct Params {
@@ -553,6 +700,13 @@ impl Client {
         })
     }
 
+    /// Retrieves information about a transaction with a given `txid`
+    /// as reported by the Bitcoin Core backend.
+    ///
+    /// # Errors
+    ///
+    /// If the WebSocket connection was closed or emitted an error, or if the
+    /// response body is of unexpected format.
     pub async fn transaction_specific(
         &mut self,
         txid: super::Txid,
@@ -580,7 +734,12 @@ impl Client {
     }
 
     /// Returns the estimated fee for a set of target blocks
-    /// to wait. The returned unit is bitcoin per vByte.
+    /// to wait. The returned unit is satoshis per vByte.
+    ///
+    /// # Errors
+    ///
+    /// If the WebSocket connection was closed or emitted an error, or if the
+    /// response body is of unexpected format.
     pub async fn estimate_fee(&mut self, blocks: Vec<u16>) -> Result<Vec<super::Amount>> {
         #[derive(serde::Serialize)]
         struct Params {
@@ -608,6 +767,11 @@ impl Client {
     /// Returns the estimated total fee for a transaction of
     /// the given size in bytes for a set of target blocks
     /// to wait.
+    ///
+    /// # Errors
+    ///
+    /// If the WebSocket connection was closed or emitted an error, or if the
+    /// response body is of unexpected format.
     pub async fn estimate_tx_fee(
         &mut self,
         blocks: Vec<u16>,
@@ -644,6 +808,14 @@ impl Client {
         })
     }
 
+    /// Broadcasts a transaction to the network, returning its [`Txid`].
+    ///
+    /// [`Txid`]: super::Txid
+    ///
+    /// # Errors
+    ///
+    /// If the WebSocket connection was closed or emitted an error, or if the
+    /// response body is of unexpected format.
     pub async fn send_transaction(
         &mut self,
         transaction: &super::BitcoinTransaction,
@@ -671,6 +843,12 @@ impl Client {
         })
     }
 
+    /// Retrieves all unspent transaciton outputs controlled by an address.
+    ///
+    /// # Errors
+    ///
+    /// If the WebSocket connection was closed or emitted an error, or if the
+    /// response body is of unexpected format.
     pub async fn get_utxos_from_address(
         &mut self,
         address: super::Address,
@@ -704,6 +882,11 @@ impl Client {
     /// entries. Defaults to 3600s.
     ///
     /// [`BalanceHistory`]: crate::BalanceHistory
+    ///
+    /// # Errors
+    ///
+    /// If the WebSocket connection was closed or emitted an error, or if the
+    /// response body is of unexpected format.
     pub async fn get_balance_history(
         &mut self,
         address: super::Address,
@@ -745,6 +928,13 @@ impl Client {
         })
     }
 
+    /// Subscribe to new blocks being added to the chain.
+    ///
+    /// # Errors
+    ///
+    /// If the WebSocket connection was closed or emitted an error, if the
+    /// subscription could not be established, or if the response body is
+    /// of unexpected format.
     pub async fn subscribe_blocks(&mut self) -> impl futures::stream::Stream<Item = Result<Block>> {
         let (tx, rx) = futures::channel::mpsc::channel(10);
         self.jobs
@@ -765,8 +955,19 @@ impl Client {
         })
     }
 
+    /// Subscribes to updates on exchange rates.
+    ///
+    /// Blockbook will emit fresh exchange rates whenever a
+    /// new block is found.
+    ///
     /// If `None` is passed, all available fiat rates
     /// will be returned on each update.
+    ///
+    /// # Errors
+    ///
+    /// If the WebSocket connection was closed or emitted an error, if the
+    /// subscription could not be established, or if the response body is
+    /// of unexpected format.
     pub async fn subscribe_fiat_rates(
         &mut self,
         currency: Option<super::Currency>,
@@ -798,6 +999,16 @@ impl Client {
         })
     }
 
+    /// Subscribe to transactions that involve at least one of a set of addresses.
+    ///
+    /// The method returns tuples of the address that was invovled and the transaction
+    /// itself.
+    ///
+    /// # Errors
+    ///
+    /// If the WebSocket connection was closed or emitted an error, if the
+    /// subscription could not be established, or if the response body is
+    /// of unexpected format.
     pub async fn subscribe_addresses(
         &mut self,
         addresses: Vec<super::Address>,
