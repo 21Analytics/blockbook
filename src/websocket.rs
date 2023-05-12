@@ -6,7 +6,6 @@ use futures::{SinkExt, StreamExt};
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum Error {
-    TungsteniteError(tokio_tungstenite::tungstenite::Error),
     DataObjectMismatch,
     SubscriptionFailed,
     WebsocketClosed,
@@ -16,7 +15,6 @@ pub enum Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Self::TungsteniteError(e) => e.fmt(f),
             Self::DataObjectMismatch => {
                 write!(
                     f,
@@ -39,12 +37,6 @@ impl std::fmt::Display for Error {
                 )
             }
         }
-    }
-}
-
-impl From<tokio_tungstenite::tungstenite::Error> for Error {
-    fn from(e: tokio_tungstenite::tungstenite::Error) -> Self {
-        Self::TungsteniteError(e)
     }
 }
 
@@ -161,7 +153,9 @@ impl Drop for Client {
 
 impl Client {
     pub async fn new(url: url::Url) -> Result<Self> {
-        let stream = tokio_tungstenite::connect_async(url).await?;
+        let stream = tokio_tungstenite::connect_async(url)
+            .await
+            .map_err(|e| Error::WebsocketError(e.into()))?;
         let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
         let (job_tx, job_rx) = futures::channel::mpsc::channel(10);
         tokio::spawn(Self::process(stream.0, job_rx, shutdown_rx));
