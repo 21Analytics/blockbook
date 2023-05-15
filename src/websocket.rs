@@ -113,15 +113,8 @@ pub struct Info {
     pub best_hash: super::BlockHash,
     pub block_0_hash: super::BlockHash,
     pub testnet: bool,
-    pub backend: Backend,
-}
-
-/// Version information about the full node.
-#[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
-#[cfg_attr(feature = "test", serde(deny_unknown_fields))]
-pub struct Backend {
-    pub version: String,
-    pub subversion: String,
+    #[serde(rename = "backend")]
+    pub backend_version: super::Version,
 }
 
 /// Information about a block.

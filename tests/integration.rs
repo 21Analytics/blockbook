@@ -1,12 +1,12 @@
 use blockbook::{
     hashes::{self, hex::FromHex},
-    websocket::{Backend, Client, Info},
+    websocket::{Client, Info},
     Address, AddressBlockVout, AddressFilter, AddressInfo, AddressInfoBasic, AddressInfoDetailed,
     AddressInfoPaging, Amount, Asset, Block, BlockHash, BlockTransaction, BlockVin, BlockVout,
     Chain, Currency, Height, LockTime, NetworkUnchecked, OpReturn, ScriptBuf, ScriptPubKey,
     ScriptPubKeyType, ScriptSig, Sequence, Ticker, TickersList, Time, Token, Transaction,
-    TransactionSpecific, Tx, TxDetail, Txid, Utxo, Vin, VinSpecific, Vout, VoutSpecific, Witness,
-    XPubInfo, XPubInfoBasic,
+    TransactionSpecific, Tx, TxDetail, Txid, Utxo, Version, Vin, VinSpecific, Vout, VoutSpecific,
+    Witness, XPubInfo, XPubInfoBasic,
 };
 use std::str::FromStr;
 
@@ -871,7 +871,7 @@ async fn test_info_ws() {
             .parse()
             .unwrap(),
         testnet: false,
-        backend: Backend {
+        backend_version: Version {
             version: "240001".into(),
             subversion: "/Satoshi:24.0.1/".into(),
         },

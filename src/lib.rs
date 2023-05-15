@@ -1016,9 +1016,17 @@ pub struct Backend {
     pub best_block_hash: crate::BlockHash,
     pub difficulty: String,
     pub size_on_disk: u64,
+    #[serde(flatten)]
+    pub version: Version,
+    pub protocol_version: String,
+}
+
+/// Version information about the full node.
+#[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+#[cfg_attr(feature = "test", serde(deny_unknown_fields))]
+pub struct Version {
     pub version: String,
     pub subversion: String,
-    pub protocol_version: String,
 }
 
 mod amount {
