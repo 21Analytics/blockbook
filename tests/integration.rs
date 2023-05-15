@@ -1,6 +1,6 @@
 use blockbook::{
     hashes::{self, hex::FromHex},
-    websocket::{Client, Info},
+    websocket::{Blockbook, Info},
     Address, AddressBlockVout, AddressFilter, AddressInfo, AddressInfoBasic, AddressInfoDetailed,
     AddressInfoPaging, Amount, Asset, Block, BlockHash, BlockTransaction, BlockVin, BlockVout,
     Chain, Currency, Height, LockTime, NetworkUnchecked, OpReturn, ScriptBuf, ScriptPubKey,
@@ -18,8 +18,8 @@ fn blockbook() -> blockbook::Blockbook {
     )
 }
 
-async fn blockbook_ws() -> Client {
-    Client::new(
+async fn blockbook_ws() -> Blockbook {
+    Blockbook::new(
         format!(
             "wss://{}/websocket",
             std::env::var("BLOCKBOOK_SERVER").unwrap()

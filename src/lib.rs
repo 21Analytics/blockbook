@@ -46,7 +46,7 @@
 //! The currently supported Blockbook version is [`0.4.0`](https://github.com/trezor/blockbook/releases/tag/v0.4.0).
 //!
 //! [`REST client`]: Blockbook
-//! [`its documentation`]: websocket::Client
+//! [`its documentation`]: websocket::Blockbook
 
 mod external {
     pub use bitcoin::address::Address;

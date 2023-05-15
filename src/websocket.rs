@@ -8,7 +8,7 @@
 //! ```ignore
 //! # tokio_test::block_on(async {
 //! # let url = format!("wss://{}/websocket", std::env::var("BLOCKBOOK_SERVER").unwrap()).parse().unwrap();
-//! let mut client = blockbook::websocket::Client::new(url).await?;
+//! let mut client = blockbook::websocket::Blockbook::new(url).await?;
 //!
 //! // query the Genesis block hash
 //! let genesis_hash = client
@@ -34,7 +34,7 @@
 //! # let url = format!("wss://{}/websocket", std::env::var("BLOCKBOOK_SERVER").unwrap()).parse().unwrap();
 //! use futures::StreamExt;
 //!
-//! let mut client = blockbook::websocket::Client::new(url).await?;
+//! let mut client = blockbook::websocket::Blockbook::new(url).await?;
 //! let mut blocks = client.subscribe_blocks().await;
 //!
 //!  while let Some(Ok(block)) = blocks.next().await {
@@ -44,7 +44,7 @@
 //! # });
 //! ```
 //!
-//! [`Client`]: crate::websocket::Client
+//! [`Client`]: crate::websocket::Blockbook
 
 mod external {
     pub use serde_json::Error as SerdeJsonError;
@@ -198,12 +198,12 @@ struct Job {
 /// See the [`module documentation`] for an example of how to use it.
 ///
 /// [`module documentation`]: crate::websocket
-pub struct Client {
+pub struct Blockbook {
     jobs: futures::channel::mpsc::Sender<Job>,
     shutdown: Option<tokio::sync::oneshot::Sender<()>>,
 }
 
-impl Drop for Client {
+impl Drop for Blockbook {
     fn drop(&mut self) {
         if self.shutdown.take().unwrap().send(()).is_err() {
             tracing::info!("processing queue already exited");
@@ -211,7 +211,7 @@ impl Drop for Client {
     }
 }
 
-impl Client {
+impl Blockbook {
     /// Constructs a new client for a given server `url`.
     ///
     /// `url` must contain the `/websocket` path fragment.
