@@ -48,7 +48,7 @@ Currently, `blockbook` only provides Bitcoin-specific APIs.
 All tests need a `BLOCKBOOK_SERVER` environment variable set:
 
 ```bash
-BLOCKBOOK_SERVER=myblockbook.com cargo test -- --ignored
+BLOCKBOOK_SERVER=myblockbook.com cargo test -- --include-ignored
 ```
 
 ## Authors
