@@ -61,41 +61,17 @@ use futures::{SinkExt, StreamExt};
 #[non_exhaustive]
 pub enum Error {
     /// An unexpected response format was encountered.
+    #[error("the json-rpc data field doesn't match the object expected based on its id")]
     DataObjectMismatch,
     /// Blockbook indicated an unsuccessful subscription attempt.
+    #[error("the server did not establish your subscription")]
     SubscriptionFailed,
     /// The WebSocket connection was closed.
+    #[error("the websocket connection got closed; reinstantiate the client to reconnect")]
     WebsocketClosed,
     /// A WebSocket error.
+    #[error("the websocket connection experienced a fatal error: {0:?}\nreinstantiate the client to reconnect")]
     WebsocketError(std::sync::Arc<tokio_tungstenite::tungstenite::Error>),
-}
-
-impl std::fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            Self::DataObjectMismatch => {
-                write!(
-                    f,
-                    "the json-rpc data field doesn't match the object expected based on its id"
-                )
-            }
-            Self::SubscriptionFailed => {
-                write!(f, "the server did not establish your subscription")
-            }
-            Self::WebsocketClosed => {
-                write!(
-                    f,
-                    "the websocket connection got closed; reinstantiate the client to reconnect"
-                )
-            }
-            Self::WebsocketError(e) => {
-                write!(
-                    f,
-                    "the websocket connection experienced a fatal error: {e:?}\nreinstantiate the client to reconnect"
-                )
-            }
-        }
-    }
 }
 
 type Result<T> = std::result::Result<T, Error>;

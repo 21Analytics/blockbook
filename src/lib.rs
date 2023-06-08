@@ -74,21 +74,14 @@ pub mod websocket;
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// An error during a network request.
+    #[error("error occured during the network request: {0}")]
     RequestError(reqwest::Error),
     /// An error while parsing a URL.
+    #[error("invalid url: {0}")]
     UrlError(url::ParseError),
 }
 
 type Result<T> = std::result::Result<T, Error>;
-
-impl std::fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            Error::RequestError(e) => e.fmt(f),
-            Error::UrlError(e) => e.fmt(f),
-        }
-    }
-}
 
 impl From<reqwest::Error> for Error {
     fn from(e: reqwest::Error) -> Self {
