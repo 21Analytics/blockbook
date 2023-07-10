@@ -71,7 +71,7 @@ pub enum Error {
     WebsocketClosed,
     /// A WebSocket error.
     #[error("the websocket connection experienced a fatal error: {0:?}\nreinstantiate the client to reconnect")]
-    WebsocketError(std::sync::Arc<tokio_tungstenite::tungstenite::Error>),
+    Websocket(std::sync::Arc<tokio_tungstenite::tungstenite::Error>),
 }
 
 type Result<T> = std::result::Result<T, Error>;
@@ -198,7 +198,7 @@ impl Blockbook {
     pub async fn new(url: url::Url) -> Result<Self> {
         let stream = tokio_tungstenite::connect_async(url)
             .await
-            .map_err(|e| Error::WebsocketError(e.into()))?;
+            .map_err(|e| Error::Websocket(e.into()))?;
         let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
         let (job_tx, job_rx) = futures::channel::mpsc::channel(10);
         tokio::spawn(Self::process(stream.0, job_rx, shutdown_rx));
@@ -282,7 +282,7 @@ impl Blockbook {
                             response_channels
                                 .iter_mut()
                                 .map(|(_,ch)| {
-                                    ch.send(Err(Error::WebsocketError(err.clone())))
+                                    ch.send(Err(Error::Websocket(err.clone())))
                                 })
                                 .collect::<futures::stream::FuturesUnordered<_>>()
                                 .collect::<Vec<std::result::Result<_, _>>>()
