@@ -491,7 +491,7 @@ impl Client {
     /// // Assuming you have a hex serialization of a transaction:
     /// // let raw_tx = hex::decode(raw_tx_hex).unwrap();
     /// let tx: bitcoin::Transaction = bitcoin::consensus::deserialize(&raw_tx).unwrap();
-    /// client.send_transaction(&tx).await?;
+    /// client.broadcast_transaction(&tx).await?;
     /// # Ok::<_,blockbook::Error>(())
     /// # });
     /// ```
@@ -500,7 +500,7 @@ impl Client {
     ///
     /// If the underlying network request fails, if the server returns a
     /// non-success response, or if the response body is of unexpected format.
-    pub async fn send_transaction(&self, tx: &BitcoinTransaction) -> Result<Txid> {
+    pub async fn broadcast_transaction(&self, tx: &BitcoinTransaction) -> Result<Txid> {
         #[derive(serde::Deserialize)]
         struct Response {
             result: Txid,

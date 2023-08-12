@@ -782,7 +782,7 @@ impl Client {
     ///
     /// If the WebSocket connection was closed or emitted an error, or if the
     /// response body is of unexpected format.
-    pub async fn send_transaction(
+    pub async fn broadcast_transaction(
         &mut self,
         transaction: &super::BitcoinTransaction,
     ) -> Result<super::Txid> {
