@@ -21,7 +21,7 @@
 //!
 //! // query the Genesis block hash
 //! let genesis_hash = client
-//!     .block_hash(blockbook::Height::from_consensus(0).unwrap())
+//!     .block_hash(&blockbook::Height::from_consensus(0).unwrap())
 //!     .await?;
 //! assert_eq!(
 //!     genesis_hash.to_string(),
@@ -29,7 +29,7 @@
 //! );
 //!
 //! // query the full block
-//! let genesis = client.block_by_hash(genesis_hash).await?;
+//! let genesis = client.block_by_hash(&genesis_hash).await?;
 //! assert_eq!(genesis.previous_block_hash, None);
 //!
 //! // inspect the first coinbase transaction
@@ -158,7 +158,7 @@ impl Blockbook {
     ///
     /// If the underlying network request fails, if the server returns a
     /// non-success response, or if the response body is of unexpected format.
-    pub async fn block_hash(&self, height: Height) -> Result<BlockHash> {
+    pub async fn block_hash(&self, height: &Height) -> Result<BlockHash> {
         #[derive(serde::Deserialize)]
         #[serde(rename_all = "camelCase")]
         struct BlockHashObject {
@@ -177,7 +177,7 @@ impl Blockbook {
     ///
     /// If the underlying network request fails, if the server returns a
     /// non-success response, or if the response body is of unexpected format.
-    pub async fn transaction(&self, txid: Txid) -> Result<Transaction> {
+    pub async fn transaction(&self, txid: &Txid) -> Result<Transaction> {
         self.query(format!("/api/v2/tx/{txid}")).await
     }
 
@@ -188,7 +188,7 @@ impl Blockbook {
     ///
     /// If the underlying network request fails, if the server returns a
     /// non-success response, or if the response body is of unexpected format.
-    pub async fn transaction_specific(&self, txid: Txid) -> Result<TransactionSpecific> {
+    pub async fn transaction_specific(&self, txid: &Txid) -> Result<TransactionSpecific> {
         self.query(format!("/api/v2/tx-specific/{txid}")).await
     }
 
@@ -199,7 +199,7 @@ impl Blockbook {
     ///
     /// If the underlying network request fails, if the server returns a
     /// non-success response, or if the response body is of unexpected format.
-    pub async fn block_by_height(&self, height: Height) -> Result<Block> {
+    pub async fn block_by_height(&self, height: &Height) -> Result<Block> {
         self.query(format!("/api/v2/block/{height}")).await
     }
 
@@ -210,7 +210,7 @@ impl Blockbook {
     ///
     /// If the underlying network request fails, if the server returns a
     /// non-success response, or if the response body is of unexpected format.
-    pub async fn block_by_hash(&self, hash: BlockHash) -> Result<Block> {
+    pub async fn block_by_hash(&self, hash: &BlockHash) -> Result<Block> {
         self.query(format!("/api/v2/block/{hash}")).await
     }
 
@@ -223,7 +223,7 @@ impl Blockbook {
     ///
     /// If the underlying network request fails, if the server returns a
     /// non-success response, or if the response body is of unexpected format.
-    pub async fn tickers_list(&self, timestamp: Time) -> Result<TickersList> {
+    pub async fn tickers_list(&self, timestamp: &Time) -> Result<TickersList> {
         self.query(format!("/api/v2/tickers-list/?timestamp={timestamp}"))
             .await
     }
@@ -238,7 +238,7 @@ impl Blockbook {
     ///
     /// If the underlying network request fails, if the server returns a
     /// non-success response, or if the response body is of unexpected format.
-    pub async fn ticker(&self, currency: Currency, timestamp: Option<Time>) -> Result<Ticker> {
+    pub async fn ticker(&self, currency: &Currency, timestamp: Option<&Time>) -> Result<Ticker> {
         let mut query_pairs = url::form_urlencoded::Serializer::new(String::new());
         query_pairs.append_pair("currency", &format!("{currency:?}"));
         if let Some(ts) = timestamp {
@@ -258,7 +258,7 @@ impl Blockbook {
     ///
     /// If the underlying network request fails, if the server returns a
     /// non-success response, or if the response body is of unexpected format.
-    pub async fn tickers(&self, timestamp: Option<Time>) -> Result<Ticker> {
+    pub async fn tickers(&self, timestamp: Option<&Time>) -> Result<Ticker> {
         self.query(format!(
             "/api/v2/tickers/{}",
             timestamp.map_or(String::new(), |ts| format!("?timestamp={ts}"))
@@ -407,7 +407,7 @@ impl Blockbook {
     /// non-success response, or if the response body is of unexpected format.
     pub async fn utxos_from_address(
         &self,
-        address: Address,
+        address: &Address,
         confirmed_only: bool,
     ) -> Result<Vec<Utxo>> {
         self.query(format!("/api/v2/utxo/{address}?confirmed={confirmed_only}"))
@@ -452,9 +452,9 @@ impl Blockbook {
     pub async fn balance_history(
         &self,
         address: &Address,
-        from: Option<Time>,
-        to: Option<Time>,
-        currency: Option<Currency>,
+        from: Option<&Time>,
+        to: Option<&Time>,
+        currency: Option<&Currency>,
         group_by: Option<u32>,
     ) -> Result<Vec<BalanceHistory>> {
         let mut query_pairs = url::form_urlencoded::Serializer::new(String::new());

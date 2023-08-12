@@ -24,7 +24,7 @@ async fn main() {
     );
 
     // query the full block
-    let genesis = client.block_by_hash(genesis_hash).await?;
+    let genesis = client.block_by_hash(&genesis_hash).await?;
     assert_eq!(genesis.previous_block_hash, None);
 
     // inspect the first coinbase transaction

@@ -50,7 +50,7 @@ async fn test_status() {
 #[tokio::test]
 async fn test_block_hash() {
     let hash = blockbook()
-        .block_hash(Height::from_consensus(763_672).unwrap())
+        .block_hash(&Height::from_consensus(763_672).unwrap())
         .await
         .unwrap();
     assert_eq!(
@@ -70,7 +70,7 @@ async fn test_tx() {
     let txid = "b0714235addd08daf83b979aa35cc9ed7558efb8327b86b4d3ccacd8b0482ae1"
         .parse()
         .unwrap();
-    let tx = blockbook().transaction(txid).await.unwrap();
+    let tx = blockbook().transaction(&txid).await.unwrap();
     let expected_tx = Transaction {
         txid,
         version: 2,
@@ -172,7 +172,7 @@ async fn test_tx() {
 async fn test_lock_time() {
     let tx = blockbook()
         .transaction(
-            "bd99f123432e23aa8b88af0e9f701a4d6c8f0638dc133a14c7ccf57fb06596ac"
+            &"bd99f123432e23aa8b88af0e9f701a4d6c8f0638dc133a14c7ccf57fb06596ac"
                 .parse()
                 .unwrap(),
         )
@@ -186,7 +186,7 @@ async fn test_lock_time() {
 async fn test_sequence() {
     let tx = blockbook()
         .transaction(
-            "bd99f123432e23aa8b88af0e9f701a4d6c8f0638dc133a14c7ccf57fb06596ac"
+            &"bd99f123432e23aa8b88af0e9f701a4d6c8f0638dc133a14c7ccf57fb06596ac"
                 .parse()
                 .unwrap(),
         )
@@ -198,7 +198,7 @@ async fn test_sequence() {
     );
     let tx = blockbook()
         .transaction(
-            "c8d7b00135b9bd03055a8f47851eafae747b759b4608bd9f35e85b3285185679"
+            &"c8d7b00135b9bd03055a8f47851eafae747b759b4608bd9f35e85b3285185679"
                 .parse()
                 .unwrap(),
         )
@@ -214,7 +214,7 @@ async fn test_tx_specific() {
     let txid = "b0714235addd08daf83b979aa35cc9ed7558efb8327b86b4d3ccacd8b0482ae1"
         .parse()
         .unwrap();
-    let tx = blockbook().transaction_specific(txid).await.unwrap();
+    let tx = blockbook().transaction_specific(&txid).await.unwrap();
     let expected_tx = TransactionSpecific {
         txid,
         version: 2,
@@ -340,7 +340,7 @@ async fn test_tx_specific_pre_segwit() {
     let txid = "0c5cb51f39ecb826cd477d94576abde1d2b6ef1b2e0ac7b9cea5d5ab28aba902";
     let wtxid = txid.parse().unwrap();
     let txid = txid.parse().unwrap();
-    let tx = blockbook().transaction_specific(txid).await.unwrap();
+    let tx = blockbook().transaction_specific(&txid).await.unwrap();
     let expected_tx = TransactionSpecific {
         txid,
         version: 1,
@@ -401,7 +401,7 @@ async fn test_tx_specific_pre_segwit() {
 async fn test_block_by_hash() {
     let block = blockbook()
         .block_by_hash(
-            "000000000003ba27aa200b1cecaad478d2b00432346c3f1f3986da1afd33e506"
+            &"000000000003ba27aa200b1cecaad478d2b00432346c3f1f3986da1afd33e506"
                 .parse()
                 .unwrap(),
         )
@@ -611,7 +611,7 @@ async fn test_block_by_hash() {
 #[tokio::test]
 async fn test_block_by_height_with_opreturn_output() {
     let block = blockbook()
-        .block_by_height(Height::from_consensus(500_044).unwrap())
+        .block_by_height(&Height::from_consensus(500_044).unwrap())
         .await
         .unwrap();
     let expected_block = Block {
@@ -694,7 +694,7 @@ async fn test_block_by_height_with_opreturn_output() {
 #[tokio::test]
 async fn test_tickers_list() {
     let tickers_list = blockbook()
-        .tickers_list(Time::from_consensus(1_674_821_349).unwrap())
+        .tickers_list(&Time::from_consensus(1_674_821_349).unwrap())
         .await
         .unwrap();
     let expected_tickers_list = TickersList {
@@ -757,7 +757,7 @@ async fn test_tickers_list() {
 async fn test_current_tickers_list() {
     blockbook()
         .tickers_list(
-            Time::from_consensus(
+            &Time::from_consensus(
                 std::time::SystemTime::now()
                     .duration_since(std::time::SystemTime::UNIX_EPOCH)
                     .unwrap()
@@ -775,7 +775,7 @@ async fn test_current_tickers_list() {
 #[tokio::test]
 async fn test_tickers() {
     let tickers = blockbook()
-        .tickers(Some(Time::from_consensus(1_674_821_349).unwrap()))
+        .tickers(Some(&Time::from_consensus(1_674_821_349).unwrap()))
         .await
         .unwrap();
     let expected_tickers = Ticker {
@@ -844,8 +844,8 @@ async fn test_current_tickers() {
 async fn test_ticker() {
     let ticker = blockbook()
         .ticker(
-            Currency::Idr,
-            Some(Time::from_consensus(1_674_692_106).unwrap()),
+            &Currency::Idr,
+            Some(&Time::from_consensus(1_674_692_106).unwrap()),
         )
         .await
         .unwrap();
@@ -1042,9 +1042,9 @@ async fn test_balance_history() {
         client
             .balance_history(
                 &address,
-                Some(from),
-                Some(to),
-                Some(Currency::Chf),
+                Some(&from),
+                Some(&to),
+                Some(&Currency::Chf),
                 Some(group_by)
             )
             .await
@@ -1070,9 +1070,9 @@ async fn test_balance_history() {
         client
             .balance_history(
                 &address,
-                Some(from),
-                Some(to),
-                Some(Currency::Chf),
+                Some(&from),
+                Some(&to),
+                Some(&Currency::Chf),
                 Some(group_by)
             )
             .await
@@ -1564,7 +1564,7 @@ async fn test_address_info_block_and_pagesize_filter_combination() {
 #[tokio::test]
 async fn test_utxos_from_address() {
     let utxos = blockbook()
-        .utxos_from_address(counterparty_burner_addr(), false)
+        .utxos_from_address(&counterparty_burner_addr(), false)
         .await
         .unwrap();
     let last_utxo = Utxo {
