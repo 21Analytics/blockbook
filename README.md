@@ -12,7 +12,7 @@ It provides both REST and WebSocket clients to access Blockbook APIs in a type-s
 ```rust
 #[tokio::main]
 async fn main() {
-    let client = blockbook::Blockbook::new("https://myblockbook.com".parse().unwrap());
+    let client = blockbook::Client::new("https://myblockbook.com".parse().unwrap());
 
     // query the Genesis block hash
     let genesis_hash = client

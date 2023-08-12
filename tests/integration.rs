@@ -1,6 +1,6 @@
 use blockbook::{
     hashes::{self, hex::FromHex},
-    websocket::{Blockbook, Info},
+    websocket::{self, Info},
     Address, AddressBlockVout, AddressFilter, AddressInfo, AddressInfoBasic, AddressInfoDetailed,
     AddressInfoPaging, Amount, Asset, Block, BlockHash, BlockTransaction, BlockVin, BlockVout,
     Chain, Currency, Height, LockTime, NetworkUnchecked, OpReturn, ScriptBuf, ScriptPubKey,
@@ -10,16 +10,16 @@ use blockbook::{
 };
 use std::str::FromStr;
 
-fn blockbook() -> blockbook::Blockbook {
-    blockbook::Blockbook::new(
+fn blockbook() -> blockbook::Client {
+    blockbook::Client::new(
         format!("https://{}", std::env::var("BLOCKBOOK_SERVER").unwrap())
             .parse()
             .unwrap(),
     )
 }
 
-async fn blockbook_ws() -> Blockbook {
-    Blockbook::new(
+async fn blockbook_ws() -> websocket::Client {
+    websocket::Client::new(
         format!(
             "wss://{}/websocket",
             std::env::var("BLOCKBOOK_SERVER").unwrap()

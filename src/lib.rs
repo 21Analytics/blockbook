@@ -17,7 +17,7 @@
 //! ```ignore
 //! # tokio_test::block_on(async {
 //! # let url = format!("https://{}", std::env::var("BLOCKBOOK_SERVER").unwrap()).parse().unwrap();
-//! let client = blockbook::Blockbook::new(url);
+//! let client = blockbook::Client::new(url);
 //!
 //! // query the Genesis block hash
 //! let genesis_hash = client
@@ -45,8 +45,8 @@
 //!
 //! The currently supported Blockbook version is [`0.4.0`](https://github.com/trezor/blockbook/releases/tag/v0.4.0).
 //!
-//! [`REST client`]: Blockbook
-//! [`its documentation`]: websocket::Blockbook
+//! [`REST client`]: Client
+//! [`its documentation`]: websocket::Client
 
 mod external {
     pub use bitcoin::address::Address;
@@ -104,12 +104,12 @@ impl From<url::ParseError> for Error {
 /// of how to use call these APIs.
 ///
 /// [`module documentation`]: crate
-pub struct Blockbook {
+pub struct Client {
     base_url: url::Url,
     client: reqwest::Client,
 }
 
-impl Blockbook {
+impl Client {
     /// Constructs a new client for a given server `base_url`.
     ///
     /// `base_url` should not contain the `/api/v2/` path fragment.
@@ -300,7 +300,7 @@ impl Blockbook {
     /// to control the pagination.
     ///
     /// [`txids`]: AddressInfo::txids
-    /// [`address_info_specific`]: Blockbook::address_info_specific
+    /// [`address_info_specific`]: Client::address_info_specific
     ///
     /// # Errors
     ///
@@ -427,7 +427,7 @@ impl Blockbook {
     /// non-success response, or if the response body is of unexpected format.
     ///
     /// [`extended public key`]: bitcoin::bip32::ExtendedPubKey
-    /// [`xpub_info_basic`]: Blockbook::xpub_info_basic
+    /// [`xpub_info_basic`]: Client::xpub_info_basic
     pub async fn utxos_from_xpub(&self, xpub: &str, confirmed_only: bool) -> Result<Vec<Utxo>> {
         self.query(format!("/api/v2/utxo/{xpub}?confirmed={confirmed_only}"))
             .await
@@ -448,7 +448,7 @@ impl Blockbook {
     /// non-success response, or if the response body is of unexpected format.
     ///
     /// [`extended public key`]: bitcoin::bip32::ExtendedPubKey
-    /// [`xpub_info_basic`]: Blockbook::xpub_info_basic
+    /// [`xpub_info_basic`]: Client::xpub_info_basic
     pub async fn balance_history(
         &self,
         address: &Address,
@@ -487,7 +487,7 @@ impl Blockbook {
     /// ```no_run
     /// # tokio_test::block_on(async {
     /// # let raw_tx = vec![0_u8];
-    /// # let client = blockbook::Blockbook::new("dummy:".parse().unwrap());
+    /// # let client = blockbook::Client::new("dummy:".parse().unwrap());
     /// // Assuming you have a hex serialization of a transaction:
     /// // let raw_tx = hex::decode(raw_tx_hex).unwrap();
     /// let tx: bitcoin::Transaction = bitcoin::consensus::deserialize(&raw_tx).unwrap();
@@ -580,7 +580,7 @@ impl Blockbook {
     /// non-success response, or if the response body is of unexpected format.
     ///
     /// [`extended public key`]: bitcoin::bip32::ExtendedPubKey
-    /// [`xpub_info_basic`]: Blockbook::xpub_info_basic
+    /// [`xpub_info_basic`]: Client::xpub_info_basic
     #[allow(clippy::too_many_arguments)]
     pub async fn xpub_info(
         &self,
@@ -699,7 +699,7 @@ impl AddressFilter {
 
 /// Used to select the level of detail for [`address info`] transactions.
 ///
-/// [`address info`]: Blockbook::address_info_specific_detailed
+/// [`address info`]: Client::address_info_specific_detailed
 pub enum TxDetail {
     Light,
     Full,
