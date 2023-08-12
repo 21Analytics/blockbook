@@ -1251,6 +1251,17 @@ pub struct TransactionSpecific {
     pub weight: u32,
 }
 
+impl From<TransactionSpecific> for BitcoinTransaction {
+    fn from(tx: TransactionSpecific) -> Self {
+        BitcoinTransaction {
+            version: tx.version.into(),
+            lock_time: tx.locktime,
+            input: tx.vin.into_iter().map(Into::into).collect(),
+            output: tx.vout.into_iter().map(Into::into).collect(),
+        }
+    }
+}
+
 /// Bitcoin-specific information about a transaction input.
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
@@ -1262,6 +1273,20 @@ pub struct VinSpecific {
     #[serde(rename = "scriptSig")]
     pub script_sig: ScriptSig,
     pub vout: u32,
+}
+
+impl From<VinSpecific> for bitcoin::TxIn {
+    fn from(vin: VinSpecific) -> Self {
+        Self {
+            previous_output: bitcoin::transaction::OutPoint {
+                txid: vin.txid,
+                vout: vin.vout,
+            },
+            script_sig: vin.script_sig.script,
+            sequence: vin.sequence,
+            witness: vin.tx_in_witness.unwrap_or_default(),
+        }
+    }
 }
 
 /// A script fulfilling spending conditions.
@@ -1282,6 +1307,15 @@ pub struct VoutSpecific {
     pub script_pub_key: ScriptPubKey,
     #[serde(with = "amount")]
     pub value: Amount,
+}
+
+impl From<VoutSpecific> for bitcoin::TxOut {
+    fn from(vout: VoutSpecific) -> Self {
+        Self {
+            value: vout.value.to_sat(),
+            script_pubkey: vout.script_pub_key.script,
+        }
+    }
 }
 
 /// A script specifying spending conditions.
