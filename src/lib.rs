@@ -1237,16 +1237,16 @@ pub struct TransactionSpecific {
     pub version: u8,
     pub vin: Vec<VinSpecific>,
     pub vout: Vec<VoutSpecific>,
-    pub blockhash: BlockHash,
-    pub blocktime: Time,
+    pub blockhash: Option<BlockHash>,
+    pub blocktime: Option<Time>,
     #[serde(rename = "hash")]
     pub wtxid: Wtxid,
-    pub confirmations: u32,
+    pub confirmations: Option<u32>,
     pub locktime: LockTime,
     #[serde(rename = "hex")]
     pub script: ScriptBuf,
     pub size: u32,
-    pub time: Time,
+    pub time: Option<Time>,
     pub vsize: u32,
     pub weight: u32,
 }

@@ -226,13 +226,13 @@ async fn test_tx_specific() {
             .parse()
             .unwrap(),
         size: 402,
-        time: Time::from_consensus(1_669_723_092).unwrap(),
+        time: Some(Time::from_consensus(1_669_723_092).unwrap()),
         vsize: 240,
         weight: 957,
-        blockhash: "00000000000000000006b7e2a7110c174f21633adbe955c8f86f36699bba6716"
+        blockhash: Some("00000000000000000006b7e2a7110c174f21633adbe955c8f86f36699bba6716"
             .parse()
-            .unwrap(),
-        blocktime: Time::from_consensus(1_669_723_092).unwrap(),
+            .unwrap()),
+        blocktime: Some(Time::from_consensus(1_669_723_092).unwrap()),
         confirmations: tx.confirmations,
         locktime: LockTime::ZERO,
         vin: vec![
@@ -350,13 +350,13 @@ async fn test_tx_specific_pre_segwit() {
             .unwrap(),
         wtxid,
         size: 191,
-        time: Time::from_consensus(1_513_622_125).unwrap(),
+        time: Some(Time::from_consensus(1_513_622_125).unwrap()),
         vsize: 191,
         weight: 764,
-        blockhash: "00000000000000000024fb37364cbf81fd49cc2d51c09c75c35433c3a1945d04"
+        blockhash: Some("00000000000000000024fb37364cbf81fd49cc2d51c09c75c35433c3a1945d04"
             .parse()
-            .unwrap(),
-        blocktime: Time::from_consensus(1_513_622_125).unwrap(),
+            .unwrap()),
+        blocktime: Some(Time::from_consensus(1_513_622_125).unwrap()),
         confirmations: tx.confirmations,
         locktime: LockTime::ZERO,
         vin: vec![VinSpecific {
