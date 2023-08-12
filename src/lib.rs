@@ -43,7 +43,7 @@
 //!
 //! ## Supported Blockbook Version
 //!
-//! The currently supported Blockbook version is [`0.4.0`](https://github.com/trezor/blockbook/releases/tag/v0.4.0).
+//! The currently supported version of Blockbook is commit [`95ee9b5b`](https://github.com/trezor/blockbook/commit/95ee9b5b).
 //!
 //! [`REST client`]: Client
 //! [`its documentation`]: websocket::Client
@@ -626,6 +626,8 @@ pub struct XPubInfoBasic {
     pub unconfirmed_balance: Amount,
     pub unconfirmed_txs: u32,
     pub txs: u32,
+    #[serde(rename = "addrTxCount")]
+    pub used_addresses_count: usize,
     pub used_tokens: u32,
     pub secondary_value: Option<f64>,
     pub tokens: Option<Vec<Token>>,
@@ -854,6 +856,7 @@ pub struct Block {
 #[serde(rename_all = "camelCase")]
 pub struct BlockTransaction {
     pub txid: Txid,
+    pub vsize: u32,
     pub vin: Vec<BlockVin>,
     pub vout: Vec<BlockVout>,
     pub block_hash: BlockHash,
@@ -1197,16 +1200,22 @@ pub struct Vin {
 /// Information about a transaction output.
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 pub struct Vout {
     #[serde(with = "amount")]
     pub value: Amount,
     pub n: u16,
     pub spent: Option<bool>,
+    pub spent_tx_id: Option<Txid>,
+    pub spent_height: Option<Height>,
+    pub spent_index: Option<u16>,
     #[serde(rename = "hex")]
     pub script: ScriptBuf,
     #[serde(deserialize_with = "deserialize_address_vector")]
     pub addresses: Vec<Address>,
     pub is_address: bool,
+    /// only present in an xpub context
+    pub is_own: Option<bool>,
 }
 
 /// Detailed information about a transaction input.

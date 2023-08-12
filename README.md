@@ -37,7 +37,7 @@ See the [crate documentation](https://docs.rs/blockbook) for more examples.
 
 ## Supported Blockbook version
 
-The currently supported version of Blockbook is [`0.4.0`](https://github.com/trezor/blockbook/releases/tag/v0.4.0).
+The currently supported version of Blockbook is commit [`95ee9b5b`](https://github.com/trezor/blockbook/commit/95ee9b5b).
 
 ## Supported currencies
 

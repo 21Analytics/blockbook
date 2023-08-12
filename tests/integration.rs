@@ -128,6 +128,9 @@ async fn test_tx() {
                 value: Amount::from_sat(32_733_248),
                 n: 0,
                 spent: Some(true),
+                spent_tx_id: Some("bbbd318561518a2cb422fe0628262b0d5ce85bada0841d81ffc755d9f7ce841c".parse().unwrap()),
+                spent_height: Some(Height::from_consensus(765_340).unwrap()),
+                spent_index: Some(23),
                 script: ScriptBuf::from_hex("0014fff48015913acb35add9b3c74b5a6f76f2d145ca")
                     .unwrap(),
                 addresses: vec!["bc1qll6gq9v38t9nttwek0r5kkn0wmedz3w2gshe0a"
@@ -135,11 +138,15 @@ async fn test_tx() {
                     .unwrap()
                     .assume_checked()],
                 is_address: true,
+                is_own: None,
             },
             Vout {
                 value: Amount::from_sat(10_273_270),
                 n: 1,
                 spent: Some(true),
+                spent_tx_id: Some("79f46438043db23e4449627a92097531995c57d6d60c438425ba61de13484e7a".parse().unwrap()),
+                spent_height: Some(Height::from_consensus(780_500).unwrap()),
+                spent_index: None,
                 script: ScriptBuf::from_hex("0014e1a8d8ab85131ec8a9521ad2e7daf16bcf3fe9e2")
                     .unwrap(),
                 addresses: vec!["bc1qux5d32u9zv0v322jrtfw0kh3d08nl60z8q964g"
@@ -147,11 +154,15 @@ async fn test_tx() {
                     .unwrap()
                     .assume_checked()],
                 is_address: true,
+                is_own: None,
             },
             Vout {
                 value: Amount::from_sat(53_902_872),
                 n: 2,
                 spent: Some(true),
+                spent_tx_id: Some("2a96ae0fc11ab3c61e01b52aea2136745c973ca112b61ed32fbfeb09795f6f10".parse().unwrap()),
+                spent_height: Some(Height::from_consensus(765_169).unwrap()),
+                spent_index: None,
                 script: ScriptBuf::from_hex("001431ac0b37f2dfa0a34c65e57c209361a916feb62d")
                     .unwrap(),
                 addresses: vec!["bc1qxxkqkdljm7s2xnr9u47zpymp4yt0ad3df4hudm"
@@ -159,6 +170,7 @@ async fn test_tx() {
                     .unwrap()
                     .assume_checked()],
                 is_address: true,
+                is_own: None,
             },
         ],
     };
@@ -441,6 +453,7 @@ async fn test_block_by_hash() {
                 txid: "8c14f0db3df150123e6f3dbbf30f8b955a8249b62ac1d1ff16284aefa3d06d87"
                     .parse()
                     .unwrap(),
+                vsize: 135,
                 vin: vec![BlockVin {
                     n: 0,
                     addresses: None,
@@ -473,6 +486,7 @@ async fn test_block_by_hash() {
                 txid: "fff2525b8931402dd09222c50775608f75787bd2b87e56995a7bdd30f79702c4"
                     .parse()
                     .unwrap(),
+                vsize: 259,
                 vin: vec![BlockVin {
                     n: 0,
                     addresses: Some(vec!["1BNwxHGaFbeUBitpjy2AsKpJ29Ybxntqvb"
@@ -522,6 +536,7 @@ async fn test_block_by_hash() {
                 txid: "6359f0868171b1d194cbee1af2f16ea598ae8fad666d9b012c8ed2b79a236ec4"
                     .parse()
                     .unwrap(),
+                vsize: 257,
                 vin: vec![BlockVin {
                     n: 0,
                     addresses: Some(vec!["15vScfMHNrXN4QvWe54q5hwfVoYwG79CS1"
@@ -571,6 +586,7 @@ async fn test_block_by_hash() {
                 txid: "e9a66845e05d5abc0ad04ec80f774a7e585c6e8db975962d069a522137b80c1d"
                     .parse()
                     .unwrap(),
+                vsize: 225,
                 vin: vec![BlockVin {
                     n: 0,
                     addresses: Some(vec!["1JxDJCyWNakZ5kECKdCU9Zka6mh34mZ7B2"
@@ -647,6 +663,7 @@ async fn test_block_by_height_with_opreturn_output() {
             txid: "db5f956e4f48e79895021a9f7e64035fd03680e96253aafd438118485bfe49cb"
                 .parse()
                 .unwrap(),
+                vsize: 177,
             vin: vec![BlockVin {
                 n: 0,
                 addresses: None,
@@ -872,8 +889,8 @@ async fn test_info_ws() {
             .unwrap(),
         testnet: false,
         backend_version: Version {
-            version: "240001".into(),
-            subversion: "/Satoshi:24.0.1/".into(),
+            version: "250000".into(),
+            subversion: "/Satoshi:25.0.0/".into(),
         },
     };
     assert_eq!(info, expected_info);
@@ -1324,15 +1341,22 @@ async fn test_address_info_specific_blocks_details() {
                     value: Amount::from_sat(11_700),
                     n: 0,
                     spent: Some(true),
+                    spent_tx_id: Some("0c169b54bdf3ffb5ee9617ad2cc93b60490820cd6d9453ccc7b837cc9400388a".parse().unwrap()),
+                    spent_height: Some(Height::from_consensus(543_468).unwrap()),
+                    spent_index: Some(3),
                     script: ScriptBuf::from_hex("a914c8ca150ee82589d47f69b8dcd7cad684d88283f187")
                         .unwrap(),
                     addresses: vec![addr_2()],
                     is_address: true,
+                    is_own: Some(true),
                 },
                 Vout {
                     value: Amount::from_sat(3_049_993),
                     n: 1,
                     spent: Some(true),
+                    spent_tx_id: Some("7da6913461443120bdbd013140cb1d521d030c1ead31c6e70688e520c5332078".parse().unwrap()),
+                    spent_height: Some(Height::from_consensus(501_554).unwrap()),
+                    spent_index: None,
                     script: ScriptBuf::from_hex("76a9147d55684397c290fbc638bdc52528350088b8837488ac")
                         .unwrap(),
                     addresses: vec!["1CRhnBV2q8ToQcaKMBBkeooJdNX9ohSWDc"
@@ -1340,6 +1364,7 @@ async fn test_address_info_specific_blocks_details() {
                         .unwrap()
                         .assume_checked()],
                     is_address: true,
+                    is_own: None,
                 },
             ],
             size: 223,
@@ -1416,6 +1441,7 @@ async fn test_address_info_specific_blocks_details_light() {
             txid: "67a6147be5216a0b77e87002e9911f62e2b3dcfa44ce15e8c28e39d77860c59e"
                 .parse()
                 .unwrap(),
+            vsize: 223,
             vin: vec![BlockVin {
                 is_address: true,
                 value: Amount::from_sat(3_084_293),
@@ -1627,6 +1653,7 @@ async fn test_xpub_info_basic_no_tokens() {
         unconfirmed_balance: Amount::from_sat(0),
         unconfirmed_txs: 0,
         txs: 1,
+        used_addresses_count: 1,
         secondary_value: Some(821f64 / 10f64.powf(8.0)),
         used_tokens: 1,
         tokens: None,
@@ -1671,6 +1698,7 @@ async fn test_xpub_info_txids() {
             unconfirmed_balance: Amount::from_sat(0),
             unconfirmed_txs: 0,
             txs: 1,
+            used_addresses_count: 1,
             secondary_value: None,
             used_tokens: 1,
             tokens: Some(vec![token()]),
@@ -1715,6 +1743,7 @@ async fn test_xpub_info_specific() {
             unconfirmed_balance: Amount::from_sat(0),
             unconfirmed_txs: 0,
             txs: 1,
+            used_addresses_count: 1,
             secondary_value: Some(0.000_008_21),
             used_tokens: 1,
             tokens: Some(vec![token()]),
@@ -1759,6 +1788,7 @@ async fn test_xpub_info_empty() {
             unconfirmed_balance: Amount::from_sat(0),
             unconfirmed_txs: 0,
             txs: 1,
+            used_addresses_count: 1,
             secondary_value: None,
             used_tokens: 1,
             tokens: Some(vec![token()]),
@@ -1791,6 +1821,7 @@ async fn test_xpub_info_entire_txs() {
             unconfirmed_balance: Amount::from_sat(0),
             unconfirmed_txs: 0,
             txs: 1,
+            used_addresses_count: 1,
             secondary_value: None,
             used_tokens: 1,
             tokens: Some(vec![token()]),
@@ -1828,6 +1859,10 @@ async fn test_xpub_info_entire_txs() {
                         .assume_checked()],
                     is_address: true,
                     spent: Some(true),
+                    spent_tx_id: Some("c3a043db12a4f30c4b85d123a32230566d762a16767d5d1f285d8f539342e746".parse().unwrap()),
+                    spent_height: Some(Height::from_consensus(787_200).unwrap()),
+                    spent_index: None,
+                    is_own: None,
                 },
                 Vout {
                     value: Amount::from_sat(821),
@@ -1840,6 +1875,10 @@ async fn test_xpub_info_entire_txs() {
                         .assume_checked()],
                     is_address: true,
                     spent: None,
+                    spent_tx_id: None,
+                    spent_height: None,
+                    spent_index: None,
+                    is_own: Some(true),
                 },
             ],
             block_hash: Some("0000000000000000000036fe411dd9dd3ef7ce4531d65314e9ab73637dab3f68"
@@ -1884,6 +1923,7 @@ async fn test_xpub_info_basic_tokens() {
         unconfirmed_balance: Amount::from_sat(0),
         unconfirmed_txs: 0,
         txs: 1,
+        used_addresses_count: 1,
         secondary_value: None,
         used_tokens: 1,
         tokens: Some(vec![token()]),
