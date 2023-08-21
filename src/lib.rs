@@ -75,25 +75,13 @@ pub mod websocket;
 pub enum Error {
     /// An error during a network request.
     #[error("error occured during the network request: {0}")]
-    RequestError(reqwest::Error),
+    RequestError(#[from] reqwest::Error),
     /// An error while parsing a URL.
     #[error("invalid url: {0}")]
-    UrlError(url::ParseError),
+    UrlError(#[from] url::ParseError),
 }
 
 type Result<T> = std::result::Result<T, Error>;
-
-impl From<reqwest::Error> for Error {
-    fn from(e: reqwest::Error) -> Self {
-        Self::RequestError(e)
-    }
-}
-
-impl From<url::ParseError> for Error {
-    fn from(e: url::ParseError) -> Self {
-        Self::UrlError(e)
-    }
-}
 
 /// A REST client that can query a Blockbook server.
 ///
