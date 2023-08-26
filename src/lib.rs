@@ -48,6 +48,8 @@
 //! [`REST client`]: Client
 //! [`its documentation`]: websocket::Client
 
+#![forbid(unsafe_code)]
+
 mod external {
     pub use bitcoin::address::Address;
     pub use bitcoin::address::NetworkUnchecked;
