@@ -12,6 +12,7 @@ keywords = ["crypto", "bitcoin", "blockexplorer", "blockbook", "client"]
 categories = ["api-bindings"]
 
 [dependencies]
+bdk = { version = "1.0.0-alpha.2", optional = true }
 bitcoin = { version = "0.31", default-features = false, features = [ "std", "serde" ] }
 chrono = { version = "0.4", default-features = false, features = ["serde"] }
 erased-serde = "0.3"
@@ -35,3 +36,7 @@ tokio-test = "0.4"
 
 [features]
 test = []
+
+[[example]]
+name = "xpub_balance"
+required-features = ["bdk"]

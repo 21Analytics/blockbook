@@ -41,6 +41,10 @@
 //!
 //! For an example of how to use the WebSocket client, see [`its documentation`].
 //!
+//! ## Available feature flags
+//!
+//! * `bdk` - adds functions for integration with the [`bdk`](https://crates.io/crates/bdk) wallet library
+//!
 //! ## Supported Blockbook Version
 //!
 //! The currently supported version of Blockbook is commit [`95ee9b5b`](https://github.com/trezor/blockbook/commit/95ee9b5b).
@@ -72,6 +76,9 @@ pub use external::*;
 /// The WebSocket client.
 pub mod websocket;
 
+#[cfg(feature = "bdk")]
+pub mod bdk;
+
 /// The errors emitted by the REST client.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -87,6 +94,10 @@ pub enum Error {
         client: semver::Version,
         server: semver::Version,
     },
+    /// An error while preparing bdk wallet information.
+    #[cfg(feature = "bdk")]
+    #[error("bdk error: {0}")]
+    BdkError(String),
 }
 
 type Result<T> = std::result::Result<T, Error>;
