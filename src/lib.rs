@@ -76,7 +76,7 @@ pub mod websocket;
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// An error during a network request.
-    #[error("error occured during the network request: {0}")]
+    #[error("error occurred during the network request: {0}")]
     RequestError(#[from] reqwest::Error),
     /// An error while parsing a URL.
     #[error("invalid url: {0}")]
@@ -430,7 +430,7 @@ impl Client {
     /// will be included for each balance history event.
     ///
     /// The history can be aggregated into chunks of time of a desired
-    /// length by specifiying a `group_by` interval in seconds.
+    /// length by specifying a `group_by` interval in seconds.
     ///
     /// # Errors
     ///

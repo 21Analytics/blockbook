@@ -967,7 +967,7 @@ impl Client {
 
     /// Subscribe to transactions that involve at least one of a set of addresses.
     ///
-    /// The method returns tuples of the address that was invovled and the transaction
+    /// The method returns tuples of the address that was involved and the transaction
     /// itself.
     ///
     /// # Errors
