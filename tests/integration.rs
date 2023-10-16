@@ -1,12 +1,12 @@
 use blockbook::{
     hashes::{self, hex::FromHex},
     websocket::{self, Info},
-    Address, AddressBlockVout, AddressFilter, AddressInfo, AddressInfoBasic, AddressInfoDetailed,
-    AddressInfoPaging, Amount, Asset, Block, BlockHash, BlockTransaction, BlockVin, BlockVout,
-    Chain, Currency, Height, LockTime, NetworkUnchecked, OpReturn, ScriptBuf, ScriptPubKey,
-    ScriptPubKeyType, ScriptSig, Sequence, Ticker, TickersList, Time, Token, Transaction,
-    TransactionSpecific, Tx, TxDetail, Txid, Utxo, Version, Vin, VinSpecific, Vout, VoutSpecific,
-    Witness, XPubInfo, XPubInfoBasic,
+    Address, AddressBlockVout, AddressFilter, AddressInfo, AddressInfoBasic, AddressInfoPaging,
+    Amount, Asset, Block, BlockHash, BlockTransaction, BlockVin, BlockVout, Chain, Currency,
+    Height, LockTime, NetworkUnchecked, OpReturn, ScriptBuf, ScriptPubKey, ScriptPubKeyType,
+    ScriptSig, Sequence, Ticker, TickersList, Time, Token, Transaction, TransactionSpecific, Tx,
+    TxDetail, Txid, Utxo, Version, Vin, VinSpecific, Vout, VoutSpecific, Witness, XPubInfo,
+    XPubInfoBasic,
 };
 use std::str::FromStr;
 
@@ -1099,7 +1099,7 @@ async fn test_address_info() {
     let address_info = blockbook().address_info(&addr_1()).await.unwrap();
     assert_eq!(&address_info.basic.address, &addr_1());
     assert_eq!(
-        address_info.txids.last().unwrap(),
+        address_info.txids.unwrap().last().unwrap(),
         &Txid::from_str("98f08111f08baba3d33af28c74facc223a07d868c0568258980119761dea441d")
             .unwrap()
     );
@@ -1114,7 +1114,7 @@ async fn test_address_info_specific_no_args() {
         .unwrap();
     assert_eq!(&address_info.basic.address, &addr_1());
     assert_eq!(
-        address_info.txids.last().unwrap(),
+        address_info.txids.as_ref().unwrap().last().unwrap(),
         &Txid::from_str("98f08111f08baba3d33af28c74facc223a07d868c0568258980119761dea441d")
             .unwrap()
     );
@@ -1156,7 +1156,7 @@ async fn test_address_info_specific_page() {
         .unwrap();
     assert_eq!(&address_info.basic.address, &address);
     assert_eq!(
-        address_info.txids.get(0).unwrap(),
+        address_info.txids.as_ref().unwrap().get(0).unwrap(),
         &Txid::from_str("685623401c3f5e9d2eaaf0657a50454e56a270ee7630d409e98d3bc257560098")
             .unwrap(),
     );
@@ -1230,7 +1230,7 @@ async fn test_address_info_specific_blocks() {
             txs: address_info.basic.txs,
             secondary_value: None,
         },
-        txids: vec![
+        txids: Some(vec![
             "ae1484c0cecf39700bb1697793bec24fbb1980207eeb1374eb293a5c403ac8c3"
                 .parse()
                 .unwrap(),
@@ -1246,7 +1246,8 @@ async fn test_address_info_specific_blocks() {
             "2c3ca46df14114490e5d22ddcbcf08a730854e7554a54094c0fb4d7b7a576ed7"
                 .parse()
                 .unwrap(),
-        ],
+        ]),
+        transactions: None,
     };
     assert_eq!(address_info, expected_address_info);
     let mut websocket_info = blockbook_ws()
@@ -1281,7 +1282,7 @@ async fn test_address_info_specific_blocks_details() {
         )
         .await
         .unwrap();
-    let expected_address_info = AddressInfoDetailed {
+    let expected_address_info = AddressInfo {
         paging: AddressInfoPaging {
             page: 1,
             total_pages: address_info.paging.total_pages,
@@ -1297,7 +1298,8 @@ async fn test_address_info_specific_blocks_details() {
             txs: address_info.basic.txs,
             secondary_value: address_info.basic.secondary_value,
         },
-        transactions: vec![Tx::Ordinary(Transaction {
+        txids: None,
+        transactions: Some(vec![Tx::Ordinary(Transaction {
             txid: "67a6147be5216a0b77e87002e9911f62e2b3dcfa44ce15e8c28e39d77860c59e"
                 .parse()
                 .unwrap(),
@@ -1346,7 +1348,7 @@ async fn test_address_info_specific_blocks_details() {
                 .parse()
                 .unwrap()),
             block_height: Some(Height::from_consensus(501_498).unwrap()),
-            confirmations: if let Tx::Ordinary(tx) = &address_info.transactions.get(0).unwrap() {
+            confirmations: if let Tx::Ordinary(tx) = &address_info.transactions.as_ref().unwrap().get(0).unwrap() {
                 tx.confirmations
             } else {
                 panic!()
@@ -1359,7 +1361,7 @@ async fn test_address_info_specific_blocks_details() {
                 "010000000106f98070e34138640e36329f4ec920cf51f70030b91e41bf1a5c89ac8cf763a5010000006a47304402200a54b9076c0fd91c3bcaa5c55a0721d18893b6aa204c87198d072555aff3bf2e02206aa296427da8eb404203044e9e33d5f69dbbdbc43be95dd4ac5c675b8c341c7301210241d3f009960b9695c8b7c546128aa4d01daf57c4ff562f6d1f30c2a85119af1cffffffff02b42d00000000000017a914c8ca150ee82589d47f69b8dcd7cad684d88283f187098a2e00000000001976a9147d55684397c290fbc638bdc52528350088b8837488ac00000000"
                 )
                 .unwrap(),
-        })],
+        })]),
     };
     assert_eq!(&address_info, &expected_address_info);
     let mut websocket_info = blockbook_ws()
@@ -1393,7 +1395,7 @@ async fn test_address_info_specific_blocks_details_light() {
         )
         .await
         .unwrap();
-    let expected_address_info = AddressInfoDetailed {
+    let expected_address_info = AddressInfo {
         paging: AddressInfoPaging {
             page: 1,
             total_pages: address_info.paging.total_pages,
@@ -1409,7 +1411,8 @@ async fn test_address_info_specific_blocks_details_light() {
             txs: address_info.basic.txs,
             secondary_value: None,
         },
-        transactions: vec![Tx::Light(BlockTransaction {
+        txids: None,
+        transactions: Some(vec![Tx::Light(BlockTransaction {
             txid: "67a6147be5216a0b77e87002e9911f62e2b3dcfa44ce15e8c28e39d77860c59e"
                 .parse()
                 .unwrap(),
@@ -1447,7 +1450,9 @@ async fn test_address_info_specific_blocks_details_light() {
                 .parse()
                 .unwrap(),
             block_height: Height::from_consensus(501_498).unwrap(),
-            confirmations: if let Tx::Light(tx) = &address_info.transactions.get(0).unwrap() {
+            confirmations: if let Tx::Light(tx) =
+                &address_info.transactions.as_ref().unwrap().get(0).unwrap()
+            {
                 tx.confirmations
             } else {
                 panic!()
@@ -1456,7 +1461,7 @@ async fn test_address_info_specific_blocks_details_light() {
             value: Amount::from_sat(3_061_693),
             value_in: Amount::from_sat(3_084_293),
             fees: Amount::from_sat(22_600),
-        })],
+        })]),
     };
     assert_eq!(&address_info, &expected_address_info);
 }
@@ -1480,7 +1485,7 @@ async fn test_address_info_correct_variant_full() {
         .await
         .unwrap();
     assert!(matches!(
-        address_info_full.transactions.get(0).unwrap(),
+        address_info_full.transactions.unwrap().get(0).unwrap(),
         Tx::Ordinary(..)
     ));
 }
@@ -1504,7 +1509,7 @@ async fn test_address_info_correct_variant_light() {
         .await
         .unwrap();
     assert!(matches!(
-        address_info_light.transactions.get(0).unwrap(),
+        address_info_light.transactions.unwrap().get(0).unwrap(),
         Tx::Light(..)
     ));
 }

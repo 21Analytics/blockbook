@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Renamed `blockbook::Client::send_transaction` to `blockbook::Client::broadcast_transaction`.
 - Bumped `tokio-tungstenite` to version 0.20.0 that is not vulnerable to
   https://rustsec.org/advisories/RUSTSEC-2023-0052 via the `webpki` crate.
+- Added support for addresses without any transactions.
 
 ## 0.1.0
 

@@ -363,7 +363,7 @@ impl Client {
         to: Option<&Height>,
         details: &TxDetail,
         also_in: Option<&Currency>,
-    ) -> Result<AddressInfoDetailed> {
+    ) -> Result<AddressInfo> {
         let mut query_pairs = url::form_urlencoded::Serializer::new(String::new());
         query_pairs.append_pair("details", details.as_str());
         if let Some(p) = page {
@@ -725,18 +725,7 @@ pub struct AddressInfoPaging {
     pub items_on_page: u32,
 }
 
-/// Address information that includes a list of involved transactions.
-#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AddressInfoDetailed {
-    #[serde(flatten)]
-    pub paging: AddressInfoPaging,
-    #[serde(flatten)]
-    pub basic: AddressInfoBasic,
-    pub transactions: Vec<Tx>,
-}
-
-/// Address information that includes a list of involved transaction IDs.
+/// Information about the transactional activity of an address.
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AddressInfo {
@@ -744,7 +733,8 @@ pub struct AddressInfo {
     pub paging: AddressInfoPaging,
     #[serde(flatten)]
     pub basic: AddressInfoBasic,
-    pub txids: Vec<Txid>,
+    pub txids: Option<Vec<Txid>>,
+    pub transactions: Option<Vec<Tx>>,
 }
 
 fn deserialize_address<'de, D>(deserializer: D) -> std::result::Result<Address, D::Error>

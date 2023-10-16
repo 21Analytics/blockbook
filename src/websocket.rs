@@ -126,8 +126,7 @@ enum OneOffResponse {
     CurrentFiatRates(super::Ticker),
     AvailableCurrencies(super::TickersList),
     FiatRatesAtTimestamps { tickers: Vec<super::Ticker> },
-    AddressInfoTxs(super::AddressInfoDetailed),
-    AddressInfoTxIds(super::AddressInfo),
+    AddressInfo(super::AddressInfo),
     AddressInfoBasic(super::AddressInfoBasic),
     UtxosFromAddress(Vec<super::Utxo>),
     BalanceHistory(Vec<super::BalanceHistory>),
@@ -575,7 +574,7 @@ impl Client {
             .await
             .unwrap();
         rx.next().await.unwrap().and_then(|resp| {
-            if let Response::OneOff(OneOffResponse::AddressInfoTxIds(info)) = resp {
+            if let Response::OneOff(OneOffResponse::AddressInfo(info)) = resp {
                 return Ok(info);
             }
             Err(Error::DataObjectMismatch)
@@ -599,7 +598,7 @@ impl Client {
         from: Option<super::Height>,
         to: Option<super::Height>,
         also_in: Option<super::Currency>,
-    ) -> Result<super::AddressInfoDetailed> {
+    ) -> Result<super::AddressInfo> {
         #[derive(serde::Serialize)]
         #[serde(rename_all = "camelCase")]
         struct Params {
@@ -630,7 +629,7 @@ impl Client {
             .await
             .unwrap();
         rx.next().await.unwrap().and_then(|resp| {
-            if let Response::OneOff(OneOffResponse::AddressInfoTxs(info)) = resp {
+            if let Response::OneOff(OneOffResponse::AddressInfo(info)) = resp {
                 return Ok(info);
             }
             Err(Error::DataObjectMismatch)
