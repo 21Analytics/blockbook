@@ -790,7 +790,7 @@ pub struct AddressInfoBasic {
     pub secondary_value: Option<f64>,
 }
 
-/// The variants for the transactions contained in [`AddressInfoDetailed::transactions`].
+/// The variants for the transactions contained in [`AddressInfo::transactions`].
 #[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(untagged)]
 pub enum Tx {
