@@ -416,7 +416,7 @@ impl Client {
     /// If the underlying network request fails, if the server returns a
     /// non-success response, or if the response body is of unexpected format.
     ///
-    /// [`extended public key`]: bitcoin::bip32::ExtendedPubKey
+    /// [`extended public key`]: bitcoin::bip32::Xpub
     /// [`xpub_info_basic`]: Client::xpub_info_basic
     pub async fn utxos_from_xpub(&self, xpub: &str, confirmed_only: bool) -> Result<Vec<Utxo>> {
         self.query(format!("/api/v2/utxo/{xpub}?confirmed={confirmed_only}"))
@@ -437,7 +437,7 @@ impl Client {
     /// If the underlying network request fails, if the server returns a
     /// non-success response, or if the response body is of unexpected format.
     ///
-    /// [`extended public key`]: bitcoin::bip32::ExtendedPubKey
+    /// [`extended public key`]: bitcoin::bip32::Xpub
     /// [`xpub_info_basic`]: Client::xpub_info_basic
     pub async fn balance_history(
         &self,
@@ -527,7 +527,7 @@ impl Client {
     /// If the underlying network request fails, if the server returns a
     /// non-success response, or if the response body is of unexpected format.
     ///
-    /// [`extended public key`]: bitcoin::bip32::ExtendedPubKey
+    /// [`extended public key`]: bitcoin::bip32::Xpub
     pub async fn xpub_info_basic(
         &self,
         xpub: &str,
@@ -569,7 +569,7 @@ impl Client {
     /// If the underlying network request fails, if the server returns a
     /// non-success response, or if the response body is of unexpected format.
     ///
-    /// [`extended public key`]: bitcoin::bip32::ExtendedPubKey
+    /// [`extended public key`]: bitcoin::bip32::Xpub
     /// [`xpub_info_basic`]: Client::xpub_info_basic
     #[allow(clippy::too_many_arguments)]
     pub async fn xpub_info(
@@ -610,7 +610,7 @@ impl Client {
 
 /// Aggregated information about funds held in addresses derivable from an [`extended public key`].
 ///
-/// [`extended public key`]: bitcoin::bip32::ExtendedPubKey
+/// [`extended public key`]: bitcoin::bip32::Xpub
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
@@ -635,7 +635,7 @@ pub struct XPubInfoBasic {
 
 /// Information about funds at a Bitcoin address derived from an [`extended public key`].
 ///
-/// [`extended public key`]: bitcoin::bip32::ExtendedPubKey
+/// [`extended public key`]: bitcoin::bip32::Xpub
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Token {
@@ -656,7 +656,7 @@ pub struct Token {
 
 /// Detailed information about funds held in addresses derivable from an [`extended public key`],
 ///
-/// [`extended public key`]: bitcoin::bip32::ExtendedPubKey
+/// [`extended public key`]: bitcoin::bip32::Xpub
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
@@ -672,7 +672,7 @@ pub struct XPubInfo {
 /// Used to select which addresses to consider when deriving from
 /// [`extended public keys`].
 ///
-/// [`extended public keys`]: bitcoin::bip32::ExtendedPubKey
+/// [`extended public keys`]: bitcoin::bip32::Xpub
 pub enum AddressFilter {
     NonZero,
     Used,
@@ -746,7 +746,7 @@ where
     let unchecked_address: Address<NetworkUnchecked> =
         serde::Deserialize::deserialize(deserializer)?;
     unchecked_address
-        .require_network(bitcoin::network::constants::Network::Bitcoin)
+        .require_network(bitcoin::Network::Bitcoin)
         .map_err(|error| {
             serde::de::Error::custom(
                 if let bitcoin::address::Error::NetworkValidation { found, .. } = error {
@@ -841,7 +841,7 @@ pub struct Block {
     pub confirmations: u32,
     pub size: u32,
     pub time: Time,
-    pub version: u32,
+    pub version: bitcoin::blockdata::block::Version,
     pub merkle_root: TxMerkleNode,
     pub nonce: String,
     pub bits: String,
@@ -1146,7 +1146,7 @@ where
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 pub struct Transaction {
     pub txid: Txid,
-    pub version: u8,
+    pub version: bitcoin::blockdata::transaction::Version,
     pub lock_time: Option<Height>,
     pub vin: Vec<Vin>,
     pub vout: Vec<Vout>,
@@ -1223,7 +1223,7 @@ pub struct Vout {
 #[cfg_attr(feature = "test", serde(deny_unknown_fields))]
 pub struct TransactionSpecific {
     pub txid: Txid,
-    pub version: u8,
+    pub version: bitcoin::blockdata::transaction::Version,
     pub vin: Vec<VinSpecific>,
     pub vout: Vec<VoutSpecific>,
     pub blockhash: Option<BlockHash>,
@@ -1243,7 +1243,7 @@ pub struct TransactionSpecific {
 impl From<TransactionSpecific> for BitcoinTransaction {
     fn from(tx: TransactionSpecific) -> Self {
         BitcoinTransaction {
-            version: tx.version.into(),
+            version: tx.version,
             lock_time: tx.locktime,
             input: tx.vin.into_iter().map(Into::into).collect(),
             output: tx.vout.into_iter().map(Into::into).collect(),
@@ -1301,7 +1301,7 @@ pub struct VoutSpecific {
 impl From<VoutSpecific> for bitcoin::TxOut {
     fn from(vout: VoutSpecific) -> Self {
         Self {
-            value: vout.value.to_sat(),
+            value: vout.value,
             script_pubkey: vout.script_pub_key.script,
         }
     }

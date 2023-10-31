@@ -73,7 +73,7 @@ async fn test_tx() {
     let tx = blockbook().transaction(&txid).await.unwrap();
     let expected_tx = Transaction {
         txid,
-        version: 2,
+        version: bitcoin::blockdata::transaction::Version::TWO,
         lock_time: None,
         script: ScriptBuf::from_hex(
             "0200000000010227fa15587fdefa0e4bddef8297e8e309478b6ecad3c79ccc4f11e0bf5a0ee4a60200000000ffffffff5a43b6f57bf76889924a806ae1cf2124de949c3f5acbeade82489f213837dde00000000000ffffffff034078f30100000000160014fff48015913acb35add9b3c74b5a6f76f2d145caf6c19c0000000000160014e1a8d8ab85131ec8a9521ad2e7daf16bcf3fe9e2187e36030000000016001431ac0b37f2dfa0a34c65e57c209361a916feb62d02483045022100e6bc8783be4d00222da4684b495c0e38578c72bc72d74321b776e777f430b5be02203dce27e811f0cb0b9ebad0d11d541a83344c985ec37a0273993caf582988c0a301210285b14271e50491ac26111dd42a6d9004f06a8e77355dac918c2fe7b1a7526ff002473044022036563b247efe66f50f453a6417d03bca152ad70913d7b69b29d7abcb602dd389022033f841a69c985ba457fb1c41a533fb0bce4b68a3bd42fdec60a89ab66623995901210285b14271e50491ac26111dd42a6d9004f06a8e77355dac918c2fe7b1a7526ff000000000"
@@ -229,7 +229,7 @@ async fn test_tx_specific() {
     let tx = blockbook().transaction_specific(&txid).await.unwrap();
     let expected_tx = TransactionSpecific {
         txid,
-        version: 2,
+        version: bitcoin::blockdata::transaction::Version::TWO,
         script: ScriptBuf::from_hex(
             "0200000000010227fa15587fdefa0e4bddef8297e8e309478b6ecad3c79ccc4f11e0bf5a0ee4a60200000000ffffffff5a43b6f57bf76889924a806ae1cf2124de949c3f5acbeade82489f213837dde00000000000ffffffff034078f30100000000160014fff48015913acb35add9b3c74b5a6f76f2d145caf6c19c0000000000160014e1a8d8ab85131ec8a9521ad2e7daf16bcf3fe9e2187e36030000000016001431ac0b37f2dfa0a34c65e57c209361a916feb62d02483045022100e6bc8783be4d00222da4684b495c0e38578c72bc72d74321b776e777f430b5be02203dce27e811f0cb0b9ebad0d11d541a83344c985ec37a0273993caf582988c0a301210285b14271e50491ac26111dd42a6d9004f06a8e77355dac918c2fe7b1a7526ff002473044022036563b247efe66f50f453a6417d03bca152ad70913d7b69b29d7abcb602dd389022033f841a69c985ba457fb1c41a533fb0bce4b68a3bd42fdec60a89ab66623995901210285b14271e50491ac26111dd42a6d9004f06a8e77355dac918c2fe7b1a7526ff000000000"
             )
@@ -355,7 +355,7 @@ async fn test_tx_specific_pre_segwit() {
     let tx = blockbook().transaction_specific(&txid).await.unwrap();
     let expected_tx = TransactionSpecific {
         txid,
-        version: 1,
+        version: bitcoin::blockdata::transaction::Version::ONE,
         script: ScriptBuf::from_hex(
             "01000000013cdefb50d22666b59b24f047b019e09a2c077ad0fb8febda33a5e0bad45990e2000000006a47304402202015dfc5b5d9030f9538c1f6e0b99fe8dbf46260044e45ad2f883744292af09b0220066353c0d19f9734278ba7072fa8b3ba1c1c30bdd583721439b8ee375a098ad8012103de2010f23c4eda698d373cfc8f7ecd576fbb4e40f67a8634ac007bb4b80a4fd4ffffffff01e62e1900000000001976a914029f45cefe259733c9d860b70f7a8385596607bf88ac00000000"
             )
@@ -440,7 +440,7 @@ async fn test_block_by_hash() {
         confirmations: block.confirmations,
         size: 957,
         time: Time::from_consensus(1_293_623_863).unwrap(),
-        version: 1,
+        version: bitcoin::blockdata::block::Version::ONE,
         merkle_root: "f3e94742aca4b5ef85488dc37c06c3282295ffec960994b2c0d5ac2a25a95766"
             .parse()
             .unwrap(),
@@ -651,7 +651,7 @@ async fn test_block_by_height_with_opreturn_output() {
         confirmations: block.confirmations,
         size: 285,
         time: Time::from_consensus(1_513_638_772).unwrap(),
-        version: 536_870_912,
+        version: bitcoin::blockdata::block::Version::from_consensus(536_870_912),
         merkle_root: "db5f956e4f48e79895021a9f7e64035fd03680e96253aafd438118485bfe49cb"
             .parse()
             .unwrap(),
@@ -1320,7 +1320,7 @@ async fn test_address_info_specific_blocks_details() {
             txid: "67a6147be5216a0b77e87002e9911f62e2b3dcfa44ce15e8c28e39d77860c59e"
                 .parse()
                 .unwrap(),
-            version: 1,
+            version: bitcoin::blockdata::transaction::Version::ONE,
             lock_time: None,
             vin: vec![Vin {
                 txid: "a563f78cac895c1abf411eb93000f751cf20c94e9f32360e643841e37080f906"
@@ -1831,7 +1831,7 @@ async fn test_xpub_info_entire_txs() {
             txid: "d60691ecdf678eb3f88ebfaf315d3907d0be62ccd40fd1f027938249966f268d"
                 .parse()
                 .unwrap(),
-            version: 2,
+            version: bitcoin::blockdata::transaction::Version::TWO,
             lock_time: Some(Height::from_consensus(784_026).unwrap()),
             vin: vec![Vin {
                 txid: "6c646dc364b600afcfc16ae44ee910cfee11a176a0d015cf423e453e3b3e9e16"
