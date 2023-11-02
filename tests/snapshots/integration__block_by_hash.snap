@@ -1,0 +1,168 @@
+---
+source: blockbook/tests/integration.rs
+expression: block
+---
+{
+  "page": 1,
+  "totalPages": 1,
+  "itemsOnPage": 1000,
+  "hash": "000000000003ba27aa200b1cecaad478d2b00432346c3f1f3986da1afd33e506",
+  "previousBlockHash": "000000000002d01c1fccc21636b607dfd930d31d01c3a62104612a1719011250",
+  "nextBlockHash": "00000000000080b66c911bd5ba14a74260057311eaeb1982802f7010f1a9f090",
+  "height": 100000,
+  "confirmations": "[REDACTED]",
+  "size": 957,
+  "time": 1293623863,
+  "version": 1,
+  "merkleRoot": "f3e94742aca4b5ef85488dc37c06c3282295ffec960994b2c0d5ac2a25a95766",
+  "nonce": "274148111",
+  "bits": "1b04864c",
+  "difficulty": "14484.1623612254",
+  "txCount": 4,
+  "txs": [
+    {
+      "txid": "8c14f0db3df150123e6f3dbbf30f8b955a8249b62ac1d1ff16284aefa3d06d87",
+      "vsize": 135,
+      "vin": [
+        {
+          "n": 0,
+          "addresses": null,
+          "isAddress": false,
+          "value": "0"
+        }
+      ],
+      "vout": [
+        {
+          "value": "5000000000",
+          "n": 0,
+          "spent": true,
+          "addresses": [
+            "1HWqMzw1jfpXb3xyuUZ4uWXY4tqL2cW47J"
+          ],
+          "isAddress": true
+        }
+      ],
+      "blockHash": "000000000003ba27aa200b1cecaad478d2b00432346c3f1f3986da1afd33e506",
+      "blockHeight": 100000,
+      "confirmations": "[REDACTED]",
+      "blockTime": 1293623863,
+      "value": "5000000000",
+      "valueIn": "0",
+      "fees": "0"
+    },
+    {
+      "txid": "fff2525b8931402dd09222c50775608f75787bd2b87e56995a7bdd30f79702c4",
+      "vsize": 259,
+      "vin": [
+        {
+          "n": 0,
+          "addresses": [
+            "1BNwxHGaFbeUBitpjy2AsKpJ29Ybxntqvb"
+          ],
+          "isAddress": true,
+          "value": "5000000000"
+        }
+      ],
+      "vout": [
+        {
+          "value": "556000000",
+          "n": 0,
+          "spent": true,
+          "addresses": [
+            "1JqDybm2nWTENrHvMyafbSXXtTk5Uv5QAn"
+          ],
+          "isAddress": true
+        },
+        {
+          "value": "4444000000",
+          "n": 1,
+          "spent": true,
+          "addresses": [
+            "1EYTGtG4LnFfiMvjJdsU7GMGCQvsRSjYhx"
+          ],
+          "isAddress": true
+        }
+      ],
+      "blockHash": "000000000003ba27aa200b1cecaad478d2b00432346c3f1f3986da1afd33e506",
+      "blockHeight": 100000,
+      "confirmations": "[REDACTED]",
+      "blockTime": 1293623863,
+      "value": "5000000000",
+      "valueIn": "5000000000",
+      "fees": "0"
+    },
+    {
+      "txid": "6359f0868171b1d194cbee1af2f16ea598ae8fad666d9b012c8ed2b79a236ec4",
+      "vsize": 257,
+      "vin": [
+        {
+          "n": 0,
+          "addresses": [
+            "15vScfMHNrXN4QvWe54q5hwfVoYwG79CS1"
+          ],
+          "isAddress": true,
+          "value": "300000000"
+        }
+      ],
+      "vout": [
+        {
+          "value": "1000000",
+          "n": 0,
+          "spent": true,
+          "addresses": [
+            "1H8ANdafjpqYntniT3Ddxh4xPBMCSz33pj"
+          ],
+          "isAddress": true
+        },
+        {
+          "value": "299000000",
+          "n": 1,
+          "spent": true,
+          "addresses": [
+            "1Am9UTGfdnxabvcywYG2hvzr6qK8T3oUZT"
+          ],
+          "isAddress": true
+        }
+      ],
+      "blockHash": "000000000003ba27aa200b1cecaad478d2b00432346c3f1f3986da1afd33e506",
+      "blockHeight": 100000,
+      "confirmations": "[REDACTED]",
+      "blockTime": 1293623863,
+      "value": "300000000",
+      "valueIn": "300000000",
+      "fees": "0"
+    },
+    {
+      "txid": "e9a66845e05d5abc0ad04ec80f774a7e585c6e8db975962d069a522137b80c1d",
+      "vsize": 225,
+      "vin": [
+        {
+          "n": 0,
+          "addresses": [
+            "1JxDJCyWNakZ5kECKdCU9Zka6mh34mZ7B2"
+          ],
+          "isAddress": true,
+          "value": "1000000"
+        }
+      ],
+      "vout": [
+        {
+          "value": "1000000",
+          "n": 0,
+          "spent": true,
+          "addresses": [
+            "16FuTPaeRSPVxxCnwQmdyx2PQWxX6HWzhQ"
+          ],
+          "isAddress": true
+        }
+      ],
+      "blockHash": "000000000003ba27aa200b1cecaad478d2b00432346c3f1f3986da1afd33e506",
+      "blockHeight": 100000,
+      "confirmations": "[REDACTED]",
+      "blockTime": 1293623863,
+      "value": "1000000",
+      "valueIn": "1000000",
+      "fees": "0"
+    }
+  ]
+}

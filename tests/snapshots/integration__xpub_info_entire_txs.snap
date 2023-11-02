@@ -1,0 +1,92 @@
+---
+source: blockbook/tests/integration.rs
+expression: xpub_info
+---
+{
+  "page": 1,
+  "totalPages": 1,
+  "itemsOnPage": 1000,
+  "address": "zpub6qd36EtRVbyDyJToANn1vnuvhGenvepKnjeUzBXDk7JE4JYBxGUAPbjh22QqZ7JkRGuAtpgBfgKP1iT9GzgQxP1TgKPEBoN3e3vN3WtY2Su",
+  "balance": "821",
+  "totalReceived": "821",
+  "totalSent": "0",
+  "unconfirmedBalance": "0",
+  "unconfirmedTxs": 0,
+  "txs": 1,
+  "addrTxCount": 1,
+  "usedTokens": 1,
+  "secondaryValue": null,
+  "tokens": [
+    {
+      "type": "XPUBAddress",
+      "name": "bc1q5au2nmza9pmplnvgzyd4ky7egu2wya56qa024u",
+      "path": "m/84'/0'/0'/0/0",
+      "transfers": 1,
+      "decimals": 8,
+      "balance": "821",
+      "totalReceived": "821",
+      "totalSent": "0"
+    }
+  ],
+  "txids": null,
+  "transactions": [
+    {
+      "txid": "d60691ecdf678eb3f88ebfaf315d3907d0be62ccd40fd1f027938249966f268d",
+      "version": 2,
+      "lockTime": 784026,
+      "vin": [
+        {
+          "txid": "6c646dc364b600afcfc16ae44ee910cfee11a176a0d015cf423e453e3b3e9e16",
+          "vout": 24,
+          "sequence": 4294967293,
+          "n": 0,
+          "addresses": [
+            "3AVvCje8AHCXrvgL8ZNsqUFdiu4LxmdNJk"
+          ],
+          "isAddress": true,
+          "value": "137000"
+        }
+      ],
+      "vout": [
+        {
+          "value": "135146",
+          "n": 0,
+          "spent": true,
+          "spentTxId": "c3a043db12a4f30c4b85d123a32230566d762a16767d5d1f285d8f539342e746",
+          "spentHeight": 787200,
+          "spentIndex": null,
+          "hex": "a9143d46e616b172612000e823699338a5b0a9e6c6f387",
+          "addresses": [
+            "37H25Nx78ueHFhwr2KWGVcVu1155WLtb92"
+          ],
+          "isAddress": true,
+          "isOwn": null
+        },
+        {
+          "value": "821",
+          "n": 1,
+          "spent": null,
+          "spentTxId": null,
+          "spentHeight": null,
+          "spentIndex": null,
+          "hex": "0014a778a9ec5d28761fcd88111b5b13d94714e2769a",
+          "addresses": [
+            "bc1q5au2nmza9pmplnvgzyd4ky7egu2wya56qa024u"
+          ],
+          "isAddress": true,
+          "isOwn": true
+        }
+      ],
+      "size": 375,
+      "vsize": 206,
+      "blockHash": "0000000000000000000036fe411dd9dd3ef7ce4531d65314e9ab73637dab3f68",
+      "blockHeight": 784027,
+      "confirmations": "[REDACTED]",
+      "blockTime": 1680680375,
+      "value": "135967",
+      "valueIn": "137000",
+      "fees": "1033",
+      "hex": "02000000000101169e3e3b3e453e42cf15d0a076a111eecf10e94ee46ac1cfaf00b664c36d646c18000000232200206e0d706cbd560f4c9845604991ce15a47dea5e854f9b56ae11decf6d98a7a821fdffffff02ea0f02000000000017a9143d46e616b172612000e823699338a5b0a9e6c6f3873503000000000000160014a778a9ec5d28761fcd88111b5b13d94714e2769a03473044022018286becb369315af56ea7ab496588ace0e34e17b9c27b6ea06c65f794f07a4202202617528bfffcb75083700a86ee40551c25c8f62717ac962ce4733d033729abda014730440220276366c3cc6b1947d7be49ceb54c5ba6511ad74596119b7beeaf8b0bb21c267f02201a6e96d8735e08db6155b49e0ef4c9344c8f663a3dda3f795c718e43d7210294014e2102fab4f766e50937a07b96b045d12e210a28ca43570e9d46f8a6f6b3c385d5e7c7ad2102eef58d1fe659a43ef061b3646d51719f1005de7b74967786e75c5c6fb4e739a9ac73640380ca00b2689af60b00"
+    }
+  ]
+}

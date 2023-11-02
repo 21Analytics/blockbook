@@ -1,0 +1,18 @@
+---
+source: blockbook/tests/integration.rs
+expression: info
+---
+{
+  "name": "Bitcoin",
+  "shortcut": "BTC",
+  "decimals": 8,
+  "version": "0.4.0",
+  "bestHeight": "[REDACTED]",
+  "bestHash": "[REDACTED]",
+  "block0Hash": "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f",
+  "testnet": false,
+  "backend": {
+    "version": "250000",
+    "subversion": "/Satoshi:25.0.0/"
+  }
+}

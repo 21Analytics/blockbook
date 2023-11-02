@@ -1,0 +1,17 @@
+---
+source: blockbook/tests/integration.rs
+expression: xpub_info
+---
+{
+  "address": "zpub6qd36EtRVbyDyJToANn1vnuvhGenvepKnjeUzBXDk7JE4JYBxGUAPbjh22QqZ7JkRGuAtpgBfgKP1iT9GzgQxP1TgKPEBoN3e3vN3WtY2Su",
+  "balance": "821",
+  "totalReceived": "821",
+  "totalSent": "0",
+  "unconfirmedBalance": "0",
+  "unconfirmedTxs": 0,
+  "txs": 1,
+  "addrTxCount": 1,
+  "usedTokens": 1,
+  "secondaryValue": 0.00000821,
+  "tokens": null
+}

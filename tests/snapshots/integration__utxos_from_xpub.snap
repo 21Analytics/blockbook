@@ -1,0 +1,15 @@
+---
+source: blockbook/tests/integration.rs
+expression: utxos.get(0).unwrap()
+---
+{
+  "txid": "d60691ecdf678eb3f88ebfaf315d3907d0be62ccd40fd1f027938249966f268d",
+  "vout": 1,
+  "value": "821",
+  "height": 784027,
+  "confirmations": "[REDACTED]",
+  "lockTime": null,
+  "coinbase": null,
+  "address": "bc1q5au2nmza9pmplnvgzyd4ky7egu2wya56qa024u",
+  "path": "m/84'/0'/0'/0/0"
+}

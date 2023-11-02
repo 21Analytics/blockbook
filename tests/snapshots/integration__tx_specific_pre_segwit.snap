@@ -1,0 +1,43 @@
+---
+source: blockbook/tests/integration.rs
+expression: tx
+---
+{
+  "txid": "0c5cb51f39ecb826cd477d94576abde1d2b6ef1b2e0ac7b9cea5d5ab28aba902",
+  "version": 1,
+  "vin": [
+    {
+      "sequence": 4294967295,
+      "txid": "e29059d4bae0a533daeb8ffbd07a072c9ae019b047f0249bb56626d250fbde3c",
+      "txinwitness": null,
+      "scriptSig": {
+        "asm": "304402202015dfc5b5d9030f9538c1f6e0b99fe8dbf46260044e45ad2f883744292af09b0220066353c0d19f9734278ba7072fa8b3ba1c1c30bdd583721439b8ee375a098ad8[ALL] 03de2010f23c4eda698d373cfc8f7ecd576fbb4e40f67a8634ac007bb4b80a4fd4",
+        "hex": "47304402202015dfc5b5d9030f9538c1f6e0b99fe8dbf46260044e45ad2f883744292af09b0220066353c0d19f9734278ba7072fa8b3ba1c1c30bdd583721439b8ee375a098ad8012103de2010f23c4eda698d373cfc8f7ecd576fbb4e40f67a8634ac007bb4b80a4fd4"
+      },
+      "vout": 0
+    }
+  ],
+  "vout": [
+    {
+      "n": 0,
+      "scriptPubKey": {
+        "address": "1Es9qximvz5W9TqtZfxx9cV7thmvDutWf",
+        "asm": "OP_DUP OP_HASH160 029f45cefe259733c9d860b70f7a8385596607bf OP_EQUALVERIFY OP_CHECKSIG",
+        "desc": "addr(1Es9qximvz5W9TqtZfxx9cV7thmvDutWf)#4h8xrdj5",
+        "hex": "76a914029f45cefe259733c9d860b70f7a8385596607bf88ac",
+        "type": "pubkeyhash"
+      },
+      "value": "1650406"
+    }
+  ],
+  "blockhash": "00000000000000000024fb37364cbf81fd49cc2d51c09c75c35433c3a1945d04",
+  "blocktime": 1513622125,
+  "hash": "0c5cb51f39ecb826cd477d94576abde1d2b6ef1b2e0ac7b9cea5d5ab28aba902",
+  "confirmations": "[REDACTED]",
+  "locktime": 0,
+  "hex": "01000000013cdefb50d22666b59b24f047b019e09a2c077ad0fb8febda33a5e0bad45990e2000000006a47304402202015dfc5b5d9030f9538c1f6e0b99fe8dbf46260044e45ad2f883744292af09b0220066353c0d19f9734278ba7072fa8b3ba1c1c30bdd583721439b8ee375a098ad8012103de2010f23c4eda698d373cfc8f7ecd576fbb4e40f67a8634ac007bb4b80a4fd4ffffffff01e62e1900000000001976a914029f45cefe259733c9d860b70f7a8385596607bf88ac00000000",
+  "size": 191,
+  "time": 1513622125,
+  "vsize": 191,
+  "weight": 764
+}

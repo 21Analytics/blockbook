@@ -1,0 +1,25 @@
+---
+source: blockbook/tests/integration.rs
+expression: address_info
+---
+{
+  "page": 1,
+  "totalPages": "[REDACTED]",
+  "itemsOnPage": 1000,
+  "address": "3Kzh9qAqVWQhEsfQz7zEQL1EuSx5tyNLNS",
+  "balance": "[REDACTED]",
+  "totalReceived": "[REDACTED]",
+  "totalSent": "[REDACTED]",
+  "unconfirmedBalance": "[REDACTED]",
+  "unconfirmedTxs": "[REDACTED]",
+  "txs": "[REDACTED]",
+  "secondaryValue": null,
+  "txids": [
+    "ae1484c0cecf39700bb1697793bec24fbb1980207eeb1374eb293a5c403ac8c3",
+    "a4b4b879af01563cccadca66d36a0f47afcf78f263bed0966df8abf0a2699f3d",
+    "e09390893277b6957cf93ad9ec4b72c6c140aceaa8e62874151ebfca403a76e1",
+    "67a6147be5216a0b77e87002e9911f62e2b3dcfa44ce15e8c28e39d77860c59e",
+    "2c3ca46df14114490e5d22ddcbcf08a730854e7554a54094c0fb4d7b7a576ed7"
+  ],
+  "transactions": null
+}

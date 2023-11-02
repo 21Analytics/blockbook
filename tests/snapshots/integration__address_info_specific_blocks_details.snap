@@ -1,0 +1,78 @@
+---
+source: blockbook/tests/integration.rs
+expression: address_info
+---
+{
+  "page": 1,
+  "totalPages": "[REDACTED]",
+  "itemsOnPage": 1000,
+  "address": "3Kzh9qAqVWQhEsfQz7zEQL1EuSx5tyNLNS",
+  "balance": "[REDACTED]",
+  "totalReceived": "[REDACTED]",
+  "totalSent": "[REDACTED]",
+  "unconfirmedBalance": "[REDACTED]",
+  "unconfirmedTxs": "[REDACTED]",
+  "txs": "[REDACTED]",
+  "secondaryValue": "[REDACTED]",
+  "txids": null,
+  "transactions": [
+    {
+      "txid": "67a6147be5216a0b77e87002e9911f62e2b3dcfa44ce15e8c28e39d77860c59e",
+      "version": 1,
+      "lockTime": null,
+      "vin": [
+        {
+          "txid": "a563f78cac895c1abf411eb93000f751cf20c94e9f32360e643841e37080f906",
+          "vout": 1,
+          "sequence": 4294967295,
+          "n": 0,
+          "addresses": [
+            "1LyqvGRjLoznNX2RbytTvuyswDpDVqoYt7"
+          ],
+          "isAddress": true,
+          "value": "3084293"
+        }
+      ],
+      "vout": [
+        {
+          "value": "11700",
+          "n": 0,
+          "spent": true,
+          "spentTxId": "0c169b54bdf3ffb5ee9617ad2cc93b60490820cd6d9453ccc7b837cc9400388a",
+          "spentHeight": 543468,
+          "spentIndex": 3,
+          "hex": "a914c8ca150ee82589d47f69b8dcd7cad684d88283f187",
+          "addresses": [
+            "3Kzh9qAqVWQhEsfQz7zEQL1EuSx5tyNLNS"
+          ],
+          "isAddress": true,
+          "isOwn": true
+        },
+        {
+          "value": "3049993",
+          "n": 1,
+          "spent": true,
+          "spentTxId": "7da6913461443120bdbd013140cb1d521d030c1ead31c6e70688e520c5332078",
+          "spentHeight": 501554,
+          "spentIndex": null,
+          "hex": "76a9147d55684397c290fbc638bdc52528350088b8837488ac",
+          "addresses": [
+            "1CRhnBV2q8ToQcaKMBBkeooJdNX9ohSWDc"
+          ],
+          "isAddress": true,
+          "isOwn": null
+        }
+      ],
+      "size": 223,
+      "vsize": 223,
+      "blockHash": "0000000000000000001617fb8817ecd53e1093247bcf813b2eae793033af0c0a",
+      "blockHeight": 501498,
+      "confirmations": "[REDACTED]",
+      "blockTime": 1514513020,
+      "value": "3061693",
+      "valueIn": "3084293",
+      "fees": "22600",
+      "hex": "010000000106f98070e34138640e36329f4ec920cf51f70030b91e41bf1a5c89ac8cf763a5010000006a47304402200a54b9076c0fd91c3bcaa5c55a0721d18893b6aa204c87198d072555aff3bf2e02206aa296427da8eb404203044e9e33d5f69dbbdbc43be95dd4ac5c675b8c341c7301210241d3f009960b9695c8b7c546128aa4d01daf57c4ff562f6d1f30c2a85119af1cffffffff02b42d00000000000017a914c8ca150ee82589d47f69b8dcd7cad684d88283f187098a2e00000000001976a9147d55684397c290fbc638bdc52528350088b8837488ac00000000"
+    }
+  ]
+}

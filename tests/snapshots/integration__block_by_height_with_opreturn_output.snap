@@ -1,0 +1,63 @@
+---
+source: blockbook/tests/integration.rs
+expression: block
+---
+{
+  "page": 1,
+  "totalPages": 1,
+  "itemsOnPage": 1000,
+  "hash": "0000000000000000001f9ba01120351182680ceba085ffabeaa532cda35f2cc7",
+  "previousBlockHash": "00000000000000000075807003ae64990ee53422788451b795839f70a177695d",
+  "nextBlockHash": "0000000000000000000401882bfcb7e7f14a14e21b827e5fb5981d07a5cea0f2",
+  "height": 500044,
+  "confirmations": "[REDACTED]",
+  "size": 285,
+  "time": 1513638772,
+  "version": 536870912,
+  "merkleRoot": "db5f956e4f48e79895021a9f7e64035fd03680e96253aafd438118485bfe49cb",
+  "nonce": "437791427",
+  "bits": "18009645",
+  "difficulty": "1873105475221.611",
+  "txCount": 1,
+  "txs": [
+    {
+      "txid": "db5f956e4f48e79895021a9f7e64035fd03680e96253aafd438118485bfe49cb",
+      "vsize": 177,
+      "vin": [
+        {
+          "n": 0,
+          "addresses": null,
+          "isAddress": false,
+          "value": "0"
+        }
+      ],
+      "vout": [
+        {
+          "value": "1250000000",
+          "n": 0,
+          "spent": true,
+          "addresses": [
+            "1NS4gbx1G2D5rc9PnvVsPys12nKxGiQg72"
+          ],
+          "isAddress": true
+        },
+        {
+          "value": "0",
+          "n": 1,
+          "spent": null,
+          "addresses": [
+            "OP_RETURN aa21a9ede2f61c3f71d1defd3fa999dfa36953755c690689799962b48bebd836974e8cf9"
+          ],
+          "isAddress": false
+        }
+      ],
+      "blockHash": "0000000000000000001f9ba01120351182680ceba085ffabeaa532cda35f2cc7",
+      "blockHeight": 500044,
+      "confirmations": "[REDACTED]",
+      "blockTime": 1513638772,
+      "value": "1250000000",
+      "valueIn": "0",
+      "fees": "0"
+    }
+  ]
+}
