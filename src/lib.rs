@@ -17,7 +17,7 @@
 //! ```ignore
 //! # tokio_test::block_on(async {
 //! # let url = format!("https://{}", std::env::var("BLOCKBOOK_SERVER").unwrap()).parse().unwrap();
-//! let client = blockbook::Client::new(url);
+//! let client = blockbook::Client::new(url).await?;
 //!
 //! // query the Genesis block hash
 //! let genesis_hash = client
@@ -81,6 +81,12 @@ pub enum Error {
     /// An error while parsing a URL.
     #[error("invalid url: {0}")]
     UrlError(#[from] url::ParseError),
+    /// The Blockbook version run on the provided server does not match the version required.
+    #[error("Blockbook version {client} required but server runs {server}.")]
+    VersionMismatch {
+        client: semver::Version,
+        server: semver::Version,
+    },
 }
 
 type Result<T> = std::result::Result<T, Error>;
@@ -103,18 +109,34 @@ impl Client {
     /// Constructs a new client for a given server `base_url`.
     ///
     /// `base_url` should not contain the `/api/v2/` path fragment.
-    pub fn new(base_url: url::Url) -> Self {
+    ///
+    /// # Errors
+    ///
+    /// If the server status could not be retreived or the Blockbook
+    /// version run on the server does not match the version required.
+    pub async fn new(base_url: url::Url) -> Result<Self> {
         let mut headers = reqwest::header::HeaderMap::new();
         headers.insert(
             reqwest::header::CONTENT_TYPE,
             reqwest::header::HeaderValue::from_static("application/json"),
         );
-        let client = reqwest::Client::builder()
-            .default_headers(headers)
-            .timeout(std::time::Duration::from_secs(10))
-            .build()
-            .unwrap();
-        Self { base_url, client }
+        let client = Self {
+            base_url,
+            client: reqwest::Client::builder()
+                .default_headers(headers)
+                .timeout(std::time::Duration::from_secs(10))
+                .build()
+                .unwrap(),
+        };
+        let client_version = semver::Version::new(0, 4, 0);
+        let server_version = client.status().await?.blockbook.version;
+        if server_version != client_version {
+            return Err(Error::VersionMismatch {
+                client: client_version,
+                server: server_version,
+            });
+        }
+        Ok(client)
     }
 
     fn url(&self, endpoint: impl AsRef<str>) -> Result<url::Url> {
@@ -477,7 +499,7 @@ impl Client {
     /// ```no_run
     /// # tokio_test::block_on(async {
     /// # let raw_tx = vec![0_u8];
-    /// # let client = blockbook::Client::new("dummy:".parse().unwrap());
+    /// # let client = blockbook::Client::new("dummy:".parse().unwrap()).await?;
     /// // Assuming you have a hex serialization of a transaction:
     /// // let raw_tx = hex::decode(raw_tx_hex).unwrap();
     /// let tx: bitcoin::Transaction = bitcoin::consensus::deserialize(&raw_tx).unwrap();

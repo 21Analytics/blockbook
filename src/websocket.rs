@@ -72,6 +72,12 @@ pub enum Error {
     /// A WebSocket error.
     #[error("the websocket connection experienced a fatal error: {0:?}\nreinstantiate the client to reconnect")]
     Websocket(#[from] std::sync::Arc<tokio_tungstenite::tungstenite::Error>),
+    /// The Blockbook version run on the provided server does not match the version required.
+    #[error("Blockbook version {client} required but server runs {server}.")]
+    VersionMismatch {
+        client: semver::Version,
+        server: semver::Version,
+    },
 }
 
 type Result<T> = std::result::Result<T, Error>;
@@ -193,7 +199,9 @@ impl Client {
     ///
     /// # Errors
     ///
-    /// If the WebSocket connection could not be established.
+    /// If the WebSocket connection could not be established, the
+    /// server info could not be retreived or the Blockbook version
+    /// run on the server does not match the version required.
     pub async fn new(url: url::Url) -> Result<Self> {
         let stream = tokio_tungstenite::connect_async(url)
             .await
@@ -201,10 +209,19 @@ impl Client {
         let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
         let (job_tx, job_rx) = futures::channel::mpsc::channel(10);
         tokio::spawn(Self::process(stream.0, job_rx, shutdown_rx));
-        Ok(Self {
+        let mut client = Self {
             jobs: job_tx,
             shutdown: Some(shutdown_tx),
-        })
+        };
+        let client_version = semver::Version::new(0, 4, 0);
+        let server_version = client.info().await?.version;
+        if server_version != client_version {
+            return Err(Error::VersionMismatch {
+                client: client_version,
+                server: server_version,
+            });
+        }
+        Ok(client)
     }
 
     #[allow(clippy::too_many_lines)]
