@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## 0.2.0
+
 - Renamed `blockbook::websocket::Error`'s `WebsocketError` variant to `Websocket`.
 - Allowed a `blockbook::TransactionSpecific` to be converted into a `bitcoin::Transaction`.
 - Renamed both rest and websocket clients from `Blockbook` to `Client`.

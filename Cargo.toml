@@ -1,6 +1,6 @@
 [package]
 name = "blockbook"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["21 Analytics <info@21analytics.ch>"]
 edition = "2021"
 license = "MIT"
