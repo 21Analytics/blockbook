@@ -467,7 +467,7 @@ mod tests {
         let anchors: Vec<_> = update_graph.all_anchors().iter().collect();
         assert_eq!(anchors.len(), 1);
         assert_eq!(
-            anchors.get(0).unwrap(),
+            anchors.first().unwrap(),
             &&(
                 bdk::chain::ConfirmationTimeAnchor {
                     anchor_block: bdk::chain::BlockId {

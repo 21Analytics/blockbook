@@ -123,7 +123,7 @@ async fn test_sequence() {
         .await
         .unwrap();
     assert_eq!(
-        tx.vin.get(0).unwrap().sequence,
+        tx.vin.first().unwrap().sequence,
         Some(Sequence(4_294_967_293))
     );
     let tx = blockbook()
@@ -135,7 +135,7 @@ async fn test_sequence() {
         )
         .await
         .unwrap();
-    assert_eq!(tx.vin.get(0).unwrap().sequence, None);
+    assert_eq!(tx.vin.first().unwrap().sequence, None);
 }
 
 #[ignore]
@@ -355,7 +355,7 @@ async fn test_fiat_rates_for_timestamps() {
         .await
         .unwrap();
     assert_eq!(tickers.len(), 1);
-    let ticker = tickers.get(0).unwrap();
+    let ticker = tickers.first().unwrap();
     assert_eq!(ticker.timestamp.to_consensus_u32(), 1_575_331_200);
     assert!(ticker.rates.contains_key(&Currency::Chf));
     assert!(ticker.rates.contains_key(&Currency::Cad));
@@ -371,14 +371,14 @@ async fn test_fiat_rates_for_timestamps() {
         .unwrap();
     assert_eq!(tickers.len(), 2);
     assert_eq!(
-        tickers.get(0).unwrap().timestamp.to_consensus_u32(),
+        tickers.first().unwrap().timestamp.to_consensus_u32(),
         1_575_331_200
     );
     assert_eq!(
         tickers.get(1).unwrap().timestamp.to_consensus_u32(),
         1_675_296_000
     );
-    assert_eq!(tickers.get(0).unwrap().rates.len(), 2);
+    assert_eq!(tickers.first().unwrap().rates.len(), 2);
     assert_eq!(tickers.get(1).unwrap().rates.len(), 2);
 }
 
@@ -427,7 +427,7 @@ async fn test_utxos_from_address_ws() {
         .unwrap();
     assert_eq!(utxos.len(), 1);
     insta::Settings::new().redact_confirmations().bind(|| {
-        insta::assert_json_snapshot!(utxos.get(0).unwrap());
+        insta::assert_json_snapshot!(utxos.first().unwrap());
     });
 }
 
@@ -575,7 +575,7 @@ async fn test_address_info_specific_page() {
         .unwrap();
     assert_eq!(&address_info.basic.address, &address);
     assert_eq!(
-        address_info.txids.as_ref().unwrap().get(0).unwrap(),
+        address_info.txids.as_ref().unwrap().first().unwrap(),
         &Txid::from_str("685623401c3f5e9d2eaaf0657a50454e56a270ee7630d409e98d3bc257560098")
             .unwrap(),
     );
@@ -740,7 +740,7 @@ async fn test_address_info_correct_variant_full() {
         .await
         .unwrap();
     assert!(matches!(
-        address_info_full.transactions.unwrap().get(0).unwrap(),
+        address_info_full.transactions.unwrap().first().unwrap(),
         Tx::Ordinary(..)
     ));
 }
@@ -765,7 +765,7 @@ async fn test_address_info_correct_variant_light() {
         .await
         .unwrap();
     assert!(matches!(
-        address_info_light.transactions.unwrap().get(0).unwrap(),
+        address_info_light.transactions.unwrap().first().unwrap(),
         Tx::Light(..)
     ));
 }
@@ -849,7 +849,7 @@ async fn test_utxos_from_xpub() {
         .await
         .unwrap();
     insta::Settings::new().redact_confirmations().bind(|| {
-        insta::assert_json_snapshot!(utxos.get(0).unwrap());
+        insta::assert_json_snapshot!(utxos.first().unwrap());
     });
 }
 
